@@ -32,7 +32,7 @@ class ProviderTimeoutException extends ProviderGatewayException {
           message: 'Provider request timed out',
           retryable: true,
           providerId: providerId,
-          details: timeout == null ? const {} : {'timeout_ms': timeout.inMilliseconds},
+          details: timeout == null ? const <String, Object?>{} : <String, Object?>{'timeout_ms': timeout.inMilliseconds},
         );
 }
 
@@ -43,7 +43,7 @@ class ProviderCancelledException extends ProviderGatewayException {
           message: 'Provider request cancelled',
           retryable: false,
           providerId: providerId,
-          details: reason == null ? const {} : {'reason': reason},
+          details: reason == null ? const <String, Object?>{} : <String, Object?>{'reason': reason},
         );
 }
 
@@ -63,7 +63,7 @@ class EgressConsentRequiredException extends ProviderGatewayException {
           code: ShadowErrorCode.permApprovalRequired,
           message: 'Explicit user consent required before sending media/file content to cloud AI provider',
           retryable: false,
-          details: const {'kind': 'egress_consent'},
+          details: const <String, Object?>{'kind': 'egress_consent'},
         );
   final List<String> resourceRefs;
   final String? purpose;
