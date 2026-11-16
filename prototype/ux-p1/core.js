@@ -505,6 +505,62 @@
   };
 
   /* Inspector delegation: every control reports through data attributes. */
+  /* Panel drawers (spec §3.1): under 1280px the media bin is a drawer,
+     under 1100px the inspector is one. Both are off-canvas by default and
+     share a scrim; Escape and the scrim dismiss them. */
+  SS.bindLayout = function () {
+    const body = document.body;
+    const binBtn = document.getElementById("btn-bin");
+    const inspBtn = document.getElementById("btn-insp");
+    const scrim = document.getElementById("drawer-scrim");
+
+    const setOpen = function (which, open) {
+      const cls = which === "bin" ? "is-bin-open" : "is-insp-open";
+      const btn = which === "bin" ? binBtn : inspBtn;
+      body.classList.toggle(cls, open);
+      btn.setAttribute("aria-expanded", String(open));
+    };
+    const closeAll = function () {
+      setOpen("bin", false);
+      setOpen("insp", false);
+    };
+    const isOpen = function (which) {
+      return body.classList.contains(which === "bin" ? "is-bin-open" : "is-insp-open");
+    };
+
+    /* Only one drawer at a time so the scrim never covers the other. */
+    binBtn.addEventListener("click", function () {
+      const open = !isOpen("bin");
+      if (open) setOpen("insp", false);
+      setOpen("bin", open);
+    });
+    inspBtn.addEventListener("click", function () {
+      const open = !isOpen("insp");
+      if (open) setOpen("bin", false);
+      setOpen("insp", open);
+    });
+    scrim.addEventListener("click", closeAll);
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key !== "Escape") return;
+      const dialog = document.getElementById("export-dialog");
+      if (dialog && dialog.open) return;
+      if (isOpen("bin") || isOpen("insp")) {
+        /* Take Escape from the global shortcut handler: dismissing the drawer
+           must not also clear the timeline selection. */
+        event.stopImmediatePropagation();
+        event.preventDefault();
+        closeAll();
+      }
+    });
+
+    /* Growing the window past a breakpoint returns the panel to the layout. */
+    window.addEventListener("resize", function () {
+      if (window.innerWidth > 1280) closeAll();
+      else if (window.innerWidth > 1100) setOpen("insp", false);
+    });
+  };
+
   SS.bindInspector = function () {
     const host = document.getElementById("inspector");
     if (!host) return;

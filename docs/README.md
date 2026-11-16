@@ -54,6 +54,6 @@ python3 docs/design/verify_design_spec.py   # exit 0 = الوثيقة متسقة
 | D8 | Permission Engine + Approval UX | ⏳ لم يبدأ |
 | D9 | Recovery + Agent Checkpoints | ⏳ لم يبدأ |
 | D10 | Integration & Test Plan | ⏳ لم يبدأ |
-| UX-P1 | Prototype عالي الدقة (timeline + export) | ⏳ لم يبدأ |
+| UX-P1 | Prototype عالي الدقة (timeline + export) | 🟡 نموذج تفاعلي يعمل في المتصفح (RTL + محور LTR، ripple، pre-flight، تقدّم/فشل/استئناف) في [prototype/ux-p1](../prototype/ux-p1/README.md)؛ جاهز لـ T1–T5 |
 | UX-P2 | اختبار 5 مستخدمين | ⏳ لم يبدأ |
 | UX-P3 | حزمة strings عربية + l10n keys | ⏳ لم يبدأ |

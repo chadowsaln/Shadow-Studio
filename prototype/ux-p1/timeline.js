@@ -140,8 +140,11 @@
       .filter(Boolean)
       .join(" ");
 
+    /* An overlay clip is identified by its text; the layer name alone tells a
+       tester nothing at a glance. */
+    const labelText = kind === "overlay" && clip.text ? clip.text : clip.name;
     let inner = '<div class="clip__body">';
-    inner += '<span class="clip__name">' + SS.esc(clip.name) + "</span>";
+    inner += '<span class="clip__name">' + SS.esc(labelText) + "</span>";
 
     if (kind === "audio") {
       if (state.pps >= 8) {
@@ -151,7 +154,7 @@
       }
     } else if (kind === "overlay") {
       inner += '<div class="clip__film" style="background-image:repeating-linear-gradient(90deg, color-mix(in srgb, var(--on-accent) 12%, transparent) 0 3px, transparent 3px 22px)"></div>';
-      if (width > 90) inner += '<span class="clip__sub" style="position:absolute;inset-block-end:4px;inset-inline-start:6px;font-size:9.5px;opacity:.75">' + SS.esc(clip.text || "") + "</span>";
+
     } else if (state.pps >= 8) {
       const frame = state.pps >= 80 ? Math.max(6, state.pps * 0.5) : Math.max(10, state.pps * 2);
       const h = asset ? asset.hue : 210;
@@ -204,6 +207,9 @@
     SS.renderInspector();
     SS.renderUndoState();
     if (SS.renderBin) SS.renderBin();
+    /* Editing while an export runs must surface "your new edits are not
+       included" (spec §7.7), so the open dialog re-renders with the revision. */
+    if (SS.renderExport && document.getElementById("export-dialog")?.open) SS.renderExport();
   };
 
   /* --------------------------------- zoom -------------------------------- */
@@ -345,9 +351,18 @@
     return {
       mode,
       clip,
+      clipEl: event.target.closest(".clip"),
       ids,
       startX: event.clientX,
       startY: event.clientY,
+      /* Keep the grabbed point under the cursor instead of jumping to the
+         pointer (the trim handle is 8px wide). */
+      grabOffset:
+        mode === "trim-in"
+          ? (event.clientX - lanesRect().left) / SS.state.pps - clip.start
+          : mode === "trim-out"
+            ? (event.clientX - lanesRect().left) / SS.state.pps - (clip.start + clip.duration)
+            : 0,
       origin: state.clips.filter((c) => ids.has(c.id)).map((c) => ({ clip: c, start: c.start, duration: c.duration, sourceIn: c.sourceIn })),
       started: false,
       pointerId: event.pointerId,
@@ -366,6 +381,14 @@
       mode: "marquee",
       startX: event.clientX,
       startY: event.clientY,
+      /* Keep the grabbed point under the cursor instead of jumping to the
+         pointer (the trim handle is 8px wide). */
+      grabOffset:
+        mode === "trim-in"
+          ? (event.clientX - lanesRect().left) / SS.state.pps - clip.start
+          : mode === "trim-out"
+            ? (event.clientX - lanesRect().left) / SS.state.pps - (clip.start + clip.duration)
+            : 0,
       rect,
       scrollLeft: $("tl-scroll").scrollLeft,
       additive: event.shiftKey,
@@ -453,7 +476,7 @@
     if (!drag.started) {
       if (Math.abs(event.clientX - drag.startX) < 3 && Math.abs(event.clientY - drag.startY) < 3) return;
       drag.started = true;
-      if (drag.mode === "move") drag.clipEl.classList.add("is-dragging");
+      if (drag.mode === "move") drag.clipEl?.classList.add("is-dragging");
     }
 
     const rawTime = timeAt(event.clientX);
@@ -473,18 +496,18 @@
         ...neighbours.filter((c) => c.start >= clip.start + clip.duration - 1e-4).map((c) => c.start)
       );
 
-      let edgeTime = drag.mode === "trim-in" ? clip.start : clip.start + clip.duration;
-      const snapped = snap(rawTime, drag.candidates, threshold, allowSnap);
-      if (snapped.guide) showGuide(snapped.time, rawTime);
+      const wantEdge = rawTime - (drag.grabOffset || 0);
+      const snapped = snap(wantEdge, drag.candidates, threshold, allowSnap);
+      if (snapped.guide) showGuide(snapped.time, wantEdge);
       else hideGuide();
-      edgeTime = snapped.time;
+      const edgeTime = snapped.time;
 
       if (drag.mode === "trim-in") {
         const minStart = Math.max(prevEnd, clip.start - clip.sourceIn / speed);
         const maxStart = clip.start + clip.duration - SS.MIN_CLIP;
         const newStart = SS.clamp(edgeTime, Math.max(0, minStart), maxStart);
         clip.sourceIn = Math.max(0, clip.sourceIn + (newStart - clip.start) * speed);
-        clip.duration += clip.start - newStart;
+        clip.duration = SS.round3(clip.duration + clip.start - newStart);
         clip.start = newStart;
         if (clip.sourceIn < 1e-6) clip.sourceIn = 0;
         if (clip.assetId && prevEnd >= clip.start - 1e-6) {
@@ -493,7 +516,7 @@
       } else {
         const maxEnd = Math.min(nextStart, clip.start + (sourceDuration - clip.sourceIn) / speed);
         const newEnd = SS.clamp(edgeTime, clip.start + SS.MIN_CLIP, maxEnd);
-        clip.duration = newEnd - clip.start;
+        clip.duration = SS.round3(newEnd - clip.start);
         if (track && asset) clip.duration = Math.min(clip.duration, (asset.duration - clip.sourceIn) / speed);
       }
       SS.renderTimeline();

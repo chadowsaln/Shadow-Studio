@@ -13,6 +13,9 @@
 
 <header class="topbar">
   <div class="topbar__left">
+    <button class="icon-btn topbar__toggle" id="btn-bin" aria-expanded="false" aria-controls="panel-bin" aria-label="إظهار المكتبة" title="المكتبة">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.2" y="4.4" width="7.2" height="7.2" rx="1.4"/><rect x="13.6" y="4.4" width="7.2" height="7.2" rx="1.4"/><rect x="3.2" y="12.4" width="7.2" height="7.2" rx="1.4"/><rect x="13.6" y="12.4" width="7.2" height="7.2" rx="1.4"/></svg>
+    </button>
     <span class="brand" aria-hidden="true">
       <svg viewBox="0 0 20 20" width="18" height="18"><path d="M10 1.6 18.4 10 10 18.4 1.6 10Z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 6.2 13.8 10 10 13.8 6.2 10Z" fill="currentColor"/></svg>
     </span>
@@ -23,6 +26,9 @@
     <span class="save" id="save-state" aria-live="polite">حفظ <span class="save__tick">✓</span> <span class="save__time" id="save-time">الآن</span></span>
   </div>
   <div class="topbar__right">
+    <button class="icon-btn topbar__toggle" id="btn-insp" aria-expanded="false" aria-controls="inspector" aria-label="إظهار المفتّش" title="المفتّش">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.1"/><circle cx="9" cy="17" r="2.1"/></svg>
+    </button>
     <button class="btn btn--primary" id="btn-export" title="تصدير (Ctrl+E)">تصدير</button>
     <button class="icon-btn" id="btn-settings" aria-label="الإعدادات" title="الإعدادات">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M4.5 12H2.1M21.9 12h-2.4M6.7 6.7 5 5M19 19l-1.7-1.7M6.7 17.3 5 19M19 5l-1.7 1.7"/></svg>
@@ -33,7 +39,7 @@
 <main class="shell">
 
   <!-- ===================== left: media bin ===================== -->
-  <aside class="panel panel--left" aria-label="المكتبة">
+  <aside class="panel panel--left" id="panel-bin" aria-label="المكتبة">
     <div class="tabs" role="tablist">
       <button class="tab is-active" role="tab" aria-selected="true" data-tab="bin">المكتبة</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="proposals">مقترحات <span class="tab__badge" id="proposal-badge">2</span></button>
@@ -156,7 +162,7 @@
   </section>
 
   <!-- ===================== right: inspector ===================== -->
-  <aside class="panel panel--right" aria-label="المفتش" id="inspector"></aside>
+  <aside class="panel panel--right" id="inspector" aria-label="المفتش"></aside>
 </main>
 
 <footer class="statusbar">
@@ -301,6 +307,8 @@
   </div>
   <p class="harness__note">Ctrl+Shift+D لإخفاء/إظهار · الحالات تُستهلك مرة واحدة</p>
 </aside>
+
+<div class="drawer-scrim" id="drawer-scrim"></div>
 
 <script src="core.js"></script>
 <script src="timeline.js"></script>
