@@ -1,0 +1,200 @@
+{
+  "graph_schema": "shadow.rendergraph/1",
+  "sequence_id": "0198f3b2-7c41-7f0a-9a1e-3d1c2b4a5e60",
+  "project_revision": 218,
+  "timebase": {
+    "ticks_per_second": 1000000,
+    "fps_num": 30000,
+    "fps_den": 1001,
+    "sample_rate": 48000,
+    "channels": 2
+  },
+  "profile": {
+    "width": 1920,
+    "height": 1080,
+    "pixel_format": "yuv420p",
+    "color_space": "bt709",
+    "interlaced": false
+  },
+  "range": {
+    "start_ticks": 0,
+    "duration_ticks": 10000000
+  },
+  "background_rgba": "#000000FF",
+  "tracks": [
+    {
+      "id": "0198f3b2-9000-7000-8000-000000000001",
+      "kind": "video",
+      "position": 0,
+      "name": "V1",
+      "enabled": true,
+      "clips": [
+        {
+          "id": "0198f3b3-0001-7000-8000-0000000000a1",
+          "asset_id": "0198f3b2-b000-7000-8000-0000000000aa",
+          "kind": "video",
+          "source_uri": "file:///home/shadow/Shadow-Studio/tools/media-spike/out/fixtures/intro-4k.mp4",
+          "source_hash": "8f43ed13e28bd13ed56d73a03ccfb055444aeb7e6cf699e417e20942d307f020",
+          "stream_index": 0,
+          "timeline_start_ticks": 0,
+          "duration_ticks": 4000000,
+          "source_in_ticks": 500000,
+          "speed_num": 1,
+          "speed_den": 1,
+          "opacity_ppm": 1000000,
+          "enabled": true,
+          "label": "intro",
+          "transform": {
+            "x_px": 0,
+            "y_px": 0,
+            "scale_x_ppm": 1000000,
+            "scale_y_ppm": 1000000,
+            "rotation_quarter_turns": 0,
+            "anchor": "center",
+            "crop_left_px": 0,
+            "crop_right_px": 0,
+            "crop_top_px": 0,
+            "crop_bottom_px": 0
+          },
+          "effects": [
+            {
+              "id": "0198f3b3-1001-7000-8000-0000000000e1",
+              "effect_key": "shadow.blur.gaussian",
+              "enabled": true,
+              "params": [
+                {
+                  "name": "radius_px",
+                  "type": "int",
+                  "value": 12,
+                  "keyframes": []
+                },
+                {
+                  "name": "amount_ppm",
+                  "type": "ppm",
+                  "value": 0,
+                  "keyframes": [
+                    {
+                      "at_ticks": 0,
+                      "value": 0,
+                      "easing": "linear"
+                    },
+                    {
+                      "at_ticks": 2000000,
+                      "value": 500000,
+                      "easing": "ease_in_out"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "0198f3b3-0002-7000-8000-0000000000a2",
+          "asset_id": "0198f3b2-b000-7000-8000-0000000000ab",
+          "kind": "video",
+          "source_uri": "file:///home/shadow/Shadow-Studio/tools/media-spike/out/fixtures/outro-hd.mp4",
+          "source_hash": "f135031db6b1ef8c22bd99e694be3fe278a0255fe9f9fc1579b51f374acdcbce",
+          "stream_index": 0,
+          "timeline_start_ticks": 4000000,
+          "duration_ticks": 6000000,
+          "source_in_ticks": 0,
+          "speed_num": 1,
+          "speed_den": 1,
+          "opacity_ppm": 1000000,
+          "enabled": true,
+          "label": "",
+          "transform": {
+            "x_px": 0,
+            "y_px": 0,
+            "scale_x_ppm": 1000000,
+            "scale_y_ppm": 1000000,
+            "rotation_quarter_turns": 0,
+            "anchor": "center",
+            "crop_left_px": 0,
+            "crop_right_px": 0,
+            "crop_top_px": 0,
+            "crop_bottom_px": 0
+          },
+          "effects": []
+        }
+      ],
+      "transitions": [
+        {
+          "id": "0198f3b4-0001-7000-8000-0000000000c1",
+          "kind": "crossfade",
+          "at_ticks": 4000000,
+          "duration_ticks": 1000000,
+          "from_clip_id": "0198f3b3-0001-7000-8000-0000000000a1",
+          "to_clip_id": "0198f3b3-0002-7000-8000-0000000000a2"
+        }
+      ]
+    },
+    {
+      "id": "0198f3b2-9000-7000-8000-000000000002",
+      "kind": "overlay",
+      "position": 1,
+      "name": "T1",
+      "enabled": true,
+      "text_layers": [
+        {
+          "id": "0198f3b5-0001-7000-8000-0000000000d1",
+          "raster_uri": "file:///home/shadow/Shadow-Studio/tools/media-spike/out/fixtures/lower-third.rgba",
+          "raster_hash": "0a2fdb5680bd3655f7012b6d9b106d09ca041ad89f55b00f56274c453a132604",
+          "raster_width": 1200,
+          "raster_height": 180,
+          "start_ticks": 1000000,
+          "duration_ticks": 3000000,
+          "opacity_ppm": 1000000,
+          "transform": {
+            "x_px": 0,
+            "y_px": 820,
+            "scale_x_ppm": 1000000,
+            "scale_y_ppm": 1000000,
+            "rotation_quarter_turns": 0,
+            "anchor": "top_left",
+            "crop_left_px": 0,
+            "crop_right_px": 0,
+            "crop_top_px": 0,
+            "crop_bottom_px": 0
+          },
+          "animation_in": {
+            "kind": "fade",
+            "duration_ticks": 250000
+          },
+          "animation_out": {
+            "kind": "none",
+            "duration_ticks": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "0198f3b2-9000-7000-8000-000000000003",
+      "kind": "audio",
+      "position": 2,
+      "name": "A1",
+      "enabled": true,
+      "gain_mb": 0,
+      "pan_ppm": 0,
+      "audio_clips": [
+        {
+          "id": "0198f3b6-0001-7000-8000-0000000000f1",
+          "asset_id": "0198f3b2-b000-7000-8000-0000000000ac",
+          "source_uri": "file:///home/shadow/Shadow-Studio/tools/media-spike/out/fixtures/vo-take3.wav",
+          "source_hash": "8b5fd0a687540788b61c9b9ac40f2f50cc7f6e2e4e39651414aa297c4244a01e",
+          "stream_index": 0,
+          "timeline_start_ticks": 0,
+          "duration_ticks": 10000000,
+          "source_in_ticks": 0,
+          "speed_num": 1,
+          "speed_den": 1,
+          "gain_mb": -3000,
+          "fade_in_ticks": 200000,
+          "fade_out_ticks": 400000,
+          "enabled": true
+        }
+      ]
+    }
+  ]
+}

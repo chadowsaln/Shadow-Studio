@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shadow Studio — نموذج تفاعلي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__left">
+    <span class="brand" aria-hidden="true">
+      <svg viewBox="0 0 20 20" width="18" height="18"><path d="M10 1.6 18.4 10 10 18.4 1.6 10Z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10 6.2 13.8 10 10 13.8 6.2 10Z" fill="currentColor"/></svg>
+    </span>
+    <span class="brand__name">Shadow Studio</span>
+    <span class="project" title="اسم المشروع">
+      <span class="project__name" dir="ltr">ep12.ssproj</span>
+    </span>
+    <span class="save" id="save-state" aria-live="polite">حفظ <span class="save__tick">✓</span> <span class="save__time" id="save-time">الآن</span></span>
+  </div>
+  <div class="topbar__right">
+    <button class="btn btn--primary" id="btn-export" title="تصدير (Ctrl+E)">تصدير</button>
+    <button class="icon-btn" id="btn-settings" aria-label="الإعدادات" title="الإعدادات">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M4.5 12H2.1M21.9 12h-2.4M6.7 6.7 5 5M19 19l-1.7-1.7M6.7 17.3 5 19M19 5l-1.7 1.7"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="shell">
+
+  <!-- ===================== left: media bin ===================== -->
+  <aside class="panel panel--left" aria-label="المكتبة">
+    <div class="tabs" role="tablist">
+      <button class="tab is-active" role="tab" aria-selected="true" data-tab="bin">المكتبة</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="proposals">مقترحات <span class="tab__badge" id="proposal-badge">2</span></button>
+    </div>
+
+    <div class="tabpane" id="pane-bin">
+      <div class="bin__tools">
+        <button class="btn btn--ghost" id="btn-import">استيراد</button>
+        <input class="input input--search" id="bin-search" type="search" placeholder="بحث في الوسائط" aria-label="بحث في الوسائط">
+      </div>
+      <ul class="bin" id="bin-list"></ul>
+      <p class="hint">اسحب أصلاً إلى المسار، أو انقر مزدوجاً لإضافته عند رأس التشغيل.</p>
+    </div>
+
+    <div class="tabpane is-hidden" id="pane-proposals">
+      <ul class="proposals" id="proposal-list"></ul>
+      <p class="hint">المقترحات تُطبَّق كمعاملة واحدة قابلة للتراجع.</p>
+    </div>
+  </aside>
+
+  <!-- ===================== center ===================== -->
+  <section class="center" aria-label="المعاينة والخط الزمني">
+
+    <div class="preview" id="preview">
+      <div class="viewer" id="viewer">
+        <div class="viewer__frame" id="frame-bg">
+          <div class="viewer__scene" id="frame-scene"></div>
+          <div class="viewer__text" id="frame-overlay" hidden></div>
+          <div class="viewer__safe" id="safe-area" hidden>
+            <span class="safe__line safe__line--90"></span>
+            <span class="safe__line safe__line--80"></span>
+            <span class="safe__cross"></span>
+          </div>
+          <span class="viewer__wait" id="wait-badge" hidden title="بانتظار إطار المعاينة">◌</span>
+          <span class="viewer__missing" id="missing-badge" hidden>أصل مفقود</span>
+          <span class="viewer__chip" id="slow-chip" hidden>المعاينة بطيئة</span>
+        </div>
+      </div>
+
+      <div class="transport">
+        <div class="transport__buttons">
+          <button class="icon-btn" data-transport="start" aria-label="بداية التسلسل" title="بداية (Home)">⏮</button>
+          <button class="icon-btn" data-transport="back" aria-label="إطار خلف" title="إطار خلف (←)">⏪</button>
+          <button class="icon-btn icon-btn--play" id="btn-play" aria-label="تشغيل" title="تشغيل/إيقاف (Space)">▶</button>
+          <button class="icon-btn" data-transport="fwd" aria-label="إطار أمام" title="إطار أمام (→)">⏩</button>
+          <button class="icon-btn" data-transport="end" aria-label="نهاية التسلسل" title="نهاية (End)">⏭</button>
+        </div>
+        <div class="transport__tc">
+          <span class="tc" id="tc-current" dir="ltr">00:00:00:00</span>
+          <span class="tc tc--muted" dir="ltr">/ <span id="tc-total">00:00:30:00</span></span>
+        </div>
+        <div class="transport__controls">
+          <label class="field field--inline">
+            <span class="field__label">عرض</span>
+            <select class="select" id="preview-zoom" aria-label="تكبير المعاينة">
+              <option value="fit" selected>Fit</option>
+              <option value="0.5">50%</option>
+              <option value="1">100%</option>
+              <option value="2">200%</option>
+            </select>
+          </label>
+          <label class="field field--inline">
+            <span class="field__label">جودة</span>
+            <select class="select" id="preview-quality" aria-label="جودة المعاينة">
+              <option value="auto" selected>Auto</option>
+              <option value="proxy">Proxy</option>
+              <option value="original">الأصل</option>
+            </select>
+          </label>
+          <button class="chip-btn" id="btn-safe" aria-pressed="false" title="مناطق آمنة">مناطق آمنة</button>
+          <button class="chip-btn" id="btn-mute" aria-pressed="false" title="كتم (M)">🔊 <span id="volume-value">80</span></button>
+          <button class="icon-btn" id="btn-fullscreen" aria-label="ملء الشاشة" title="ملء الشاشة (F)">⛶</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline" id="timeline" aria-label="الخط الزمني">
+      <div class="tl-toolbar">
+        <div class="tl-toolbar__group">
+          <button class="icon-btn" id="btn-undo" aria-label="تراجع" title="تراجع (Ctrl+Z)">⟲</button>
+          <button class="icon-btn" id="btn-redo" aria-label="إعادة" title="إعادة (Shift+Ctrl+Z)">⟳</button>
+          <span class="tl-sep" aria-hidden="true"></span>
+          <button class="chip-btn" id="btn-split" title="قصّ عند رأس التشغيل (S)">قصّ</button>
+          <button class="chip-btn" id="btn-snap" aria-pressed="true" title="التصاق (N)">التصاق</button>
+        </div>
+        <div class="tl-toolbar__group tl-toolbar__group--zoom">
+          <button class="icon-btn" id="btn-fit" aria-label="ملاءمة التسلسل" title="ملاءمة (Z)">⤢</button>
+          <button class="icon-btn" id="btn-zoom-out" aria-label="تصغير" title="تصغير (-)">−</button>
+          <input class="zoom" id="zoom-range" type="range" min="0" max="7" step="1" value="3" aria-label="مستوى التكبير">
+          <button class="icon-btn" id="btn-zoom-in" aria-label="تكبير" title="تكبير (=)">+</button>
+          <span class="tl-zoomval" id="zoom-value" dir="ltr">20 px/s</span>
+        </div>
+        <div class="tl-toolbar__group">
+          <span class="tl-io" id="io-readout" dir="ltr" title="In / Out">I — <span>00:00:00:00</span> · O — <span>00:00:00:00</span></span>
+          <span class="tc tc--sm" id="tl-tc" dir="ltr">00:00:00:00</span>
+        </div>
+      </div>
+
+      <div class="tl-body" id="tl-body">
+        <div class="tl-gutter">
+          <div class="tl-gutter__ruler"></div>
+          <div class="tl-headers" id="track-headers"></div>
+        </div>
+        <div class="tl-scroll" id="tl-scroll">
+          <div class="tl-canvas" id="tl-canvas">
+            <div class="ruler" id="ruler" tabindex="0" role="slider"
+                 aria-label="مسطرة الزمن" aria-valuemin="0" aria-valuenow="0">
+              <div class="ruler__inout" id="ruler-io" hidden></div>
+            </div>
+            <div class="lanes" id="lanes"></div>
+            <div class="playhead" id="playhead"><span class="playhead__head"></span></div>
+            <div class="tl-empty" id="tl-empty" hidden>
+              <p>اسحب مقطعاً من المكتبة أو استورد ملفاً</p>
+              <button class="btn btn--ghost" data-action="import">استيراد</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== right: inspector ===================== -->
+  <aside class="panel panel--right" aria-label="المفتش" id="inspector"></aside>
+</main>
+
+<footer class="statusbar">
+  <span class="status status--ok"><span class="dot"></span> Ready</span>
+  <span class="status" id="status-proxy">4K proxy 2/2</span>
+  <span class="status" id="status-cache">Cache 3.2 GB</span>
+  <span class="status" id="status-rev">Rev 218</span>
+  <button class="status status--render" id="status-render" hidden></button>
+  <span class="status status--ai" id="status-ai">AI: يحتاج مفتاحاً</span>
+</footer>
+
+<!-- ===================== toasts ===================== -->
+<div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+<!-- ===================== settings popover ===================== -->
+<div class="popover" id="settings-popover" hidden>
+  <div class="popover__head">
+    <h2 class="title">الإعدادات</h2>
+    <button class="icon-btn" data-close-popover aria-label="إغلاق">✕</button>
+  </div>
+  <div class="setting">
+    <span>السمة</span>
+    <div class="segmented" role="group" aria-label="السمة">
+      <button class="segmented__opt is-active" data-theme-opt="dark">داكن</button>
+      <button class="segmented__opt" data-theme-opt="light">فاتح</button>
+    </div>
+  </div>
+  <div class="setting">
+    <span>سياسة الـ proxy</span>
+    <select class="select" id="setting-proxy">
+      <option>تلقائي (4K فقط)</option>
+      <option>الكل</option>
+      <option>معطّل</option>
+    </select>
+  </div>
+  <div class="setting">
+    <span>مجلد التصدير الافتراضي</span>
+    <span class="path" dir="ltr">~/Videos/shadow-out</span>
+  </div>
+  <div class="ai-card">
+    <p class="ai-card__title">الذكاء الاصطناعي غير مفعّل</p>
+    <p class="ai-card__body">أضف مفتاحاً لتشغيل التسميات التلقائية والمقترحات.</p>
+    <button class="btn btn--ghost" id="btn-ai-key">فتح إعداد المفتاح</button>
+  </div>
+</div>
+
+<!-- ===================== import dialog ===================== -->
+<dialog class="dialog" id="import-dialog" aria-labelledby="import-title">
+  <form method="dialog" class="dialog__form">
+    <header class="dialog__head">
+      <h2 class="title" id="import-title">استيراد وسائط</h2>
+      <button class="icon-btn" value="cancel" aria-label="إغلاق">✕</button>
+    </header>
+    <div class="dialog__body">
+      <div class="dropzone" id="dropzone">
+        <span>أفلت الملفات هنا</span>
+        <span class="dropzone__hint">MP4 · MOV · WAV · MP3</span>
+      </div>
+      <ul class="import-list" id="import-list"></ul>
+    </div>
+    <footer class="dialog__foot">
+      <span class="muted" id="import-note">٣ ملفات جاهزة للإضافة</span>
+      <button class="btn btn--primary" value="done" id="btn-import-done">تم</button>
+    </footer>
+  </form>
+</dialog>
+
+<!-- ===================== export dialog ===================== -->
+<dialog class="dialog dialog--export" id="export-dialog" aria-labelledby="export-title">
+  <div class="dialog__form">
+    <header class="dialog__head">
+      <div>
+        <h2 class="title" id="export-title">تصدير — <span id="export-seq-name">الحلقة 12</span></h2>
+        <p class="subtitle" id="export-rev-line">يعكس revision 218</p>
+      </div>
+      <button class="icon-btn" id="btn-export-min" aria-label="تصغير إلى شريط الحالة" title="متابعة التحرير أثناء التصدير">—</button>
+      <button class="icon-btn" id="btn-export-close" aria-label="إغلاق">✕</button>
+    </header>
+
+    <div class="export" id="export-body">
+      <section class="export__pane export__pane--presets" aria-label="Preset">
+        <h3 class="eyebrow">Preset</h3>
+        <ul class="presets" id="preset-list"></ul>
+        <details class="advanced" id="advanced">
+          <summary>خيارات متقدمة</summary>
+          <div class="advanced__grid" id="advanced-fields"></div>
+        </details>
+      </section>
+
+      <section class="export__pane export__pane--summary" aria-label="الملخص">
+        <dl class="summary" id="summary"></dl>
+        <div class="preflight">
+          <h3 class="eyebrow">فحص مسبق</h3>
+          <ul class="preflight__list" id="preflight-list"></ul>
+        </div>
+
+        <div class="export__run" id="export-run" hidden>
+          <div class="progress">
+            <div class="progress__bar"><span id="progress-fill"></span></div>
+            <div class="progress__meta">
+              <span id="progress-stage">تحضير</span>
+              <span class="tc tc--sm" id="progress-eta" dir="ltr">—</span>
+            </div>
+            <p class="progress__frames" id="progress-frames"></p>
+          </div>
+          <button class="btn btn--ghost" id="btn-cancel-export">إلغاء</button>
+        </div>
+
+        <div class="result" id="export-result" hidden></div>
+      </section>
+    </div>
+
+    <div class="export__queue" id="export-queue" hidden>
+      <h3 class="eyebrow">طابور التصدير</h3>
+      <ul id="queue-list"></ul>
+    </div>
+
+    <footer class="dialog__foot dialog__foot--export">
+      <span class="muted" id="export-blocked-note"></span>
+      <div class="dialog__foot-actions">
+        <button class="btn btn--ghost" id="btn-export-secondary" hidden></button>
+        <button class="btn btn--primary" id="btn-export-start">تصدير</button>
+      </div>
+    </footer>
+  </div>
+</dialog>
+
+<!-- ===================== facilitator harness ===================== -->
+<aside class="harness" id="harness" hidden aria-label="أدوات الميسّر">
+  <p class="harness__title">أدوات الميسّر</p>
+  <div class="harness__grid">
+    <button data-harness="missing">أصل مفقود</button>
+    <button data-harness="disk">قرص ممتلئ</button>
+    <button data-harness="exists">ملف موجود</button>
+    <button data-harness="crash">انهيار المحرك</button>
+    <button data-harness="timeout">مهلة المحرك</button>
+    <button data-harness="unsupported">ترميز غير مدعوم</button>
+    <button data-harness="queue">طابور ممتلئ</button>
+    <button data-harness="interrupt">تصدير منقطع</button>
+    <button data-harness="slow">محرك بطيء</button>
+    <button data-harness="reset">إعادة الضبط</button>
+  </div>
+  <p class="harness__note">Ctrl+Shift+D لإخفاء/إظهار · الحالات تُستهلك مرة واحدة</p>
+</aside>
+
+<script src="core.js"></script>
+<script src="timeline.js"></script>
+<script src="export.js"></script>
+<script>window.SS.initUi();</script>
+</body>
+</html>

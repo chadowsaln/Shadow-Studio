@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "document": "SS-ARCH-001 — Appendix هـ (field-level RenderGraph schema): effect and transition registry v1",
+  "notes": "Normative parameter surface. The Media Core advertises exactly these keys in hello_request.capabilities.filters; a param name, type or domain outside its definition is rejected (V-11, V-12, V-21). Values are evaluated per Appendix هـ.6 unless a definition says otherwise.",
+  "param_types": {
+    "int": { "json": "integer", "notes": "domain given by the definition's min/max" },
+    "ppm": { "json": "integer", "notes": "parts per million, 1000000 = 1.0" },
+    "color": { "json": "string", "notes": "#RRGGBBAA" },
+    "enum": { "json": "string", "notes": "one of the definition's values" },
+    "string": { "json": "string", "notes": "max 1024 UTF-8 bytes" },
+    "bool": { "json": "boolean", "notes": "true or false" }
+  },
+  "filters": {
+    "shadow.blur.gaussian": {
+      "since": "v1",
+      "applies_to": ["video", "image"],
+      "params": {
+        "radius_px": {
+          "type": "int",
+          "unit": "px",
+          "min": 0,
+          "max": 200,
+          "animatable": true,
+          "semantics": "Gaussian sigma in output pixels; 0 = identity."
+        },
+        "amount_ppm": {
+          "type": "ppm",
+          "unit": "ppm",
+          "min": 0,
+          "max": 1000000,
+          "animatable": true,
+          "semantics": "Linear mix between the unblurred and blurred frame: out = (1 - amount) * source + amount * gaussian(source, radius_px)."
+        }
+      }
+    },
+    "shadow.color_balance": {
+      "since": "v1",
+      "applies_to": ["video", "image"],
+      "params": {
+        "brightness_mb": {
+          "type": "int",
+          "unit": "millibel",
+          "min": -24000,
+          "max": 24000,
+          "animatable": true,
+          "semantics": "Additive luma gain in millibel; 0 = identity."
+        },
+        "contrast_ppm": {
+          "type": "ppm",
+          "unit": "ppm",
+          "min": 0,
+          "max": 2000000,
+          "animatable": true,
+          "semantics": "Luma contrast around 0.5; 1000000 = identity."
+        },
+        "saturation_ppm": {
+          "type": "ppm",
+          "unit": "ppm",
+          "min": 0,
+          "max": 2000000,
+          "animatable": true,
+          "semantics": "Chroma multiplier; 1000000 = identity, 0 = greyscale."
+        }
+      }
+    }
+  },
+  "transitions": {
+    "crossfade": {
+      "since": "v1",
+      "capability": true,
+      "semantics": "a(t) = (t - at) / duration over [at, at + duration); outgoing keeps (1 - a), incoming gets a."
+    },
+    "dissolve": {
+      "since": "v1",
+      "capability": true,
+      "semantics": "Alias of crossfade. Both keys must produce identical pixels for the same graph."
+    },
+    "wipe_left": {
+      "since": "v1",
+      "capability": false,
+      "semantics": "Reserved. A worker that does not advertise it rejects with RG_UNSUPPORTED_TRANSITION; no approximation."
+    },
+    "wipe_right": {
+      "since": "v1",
+      "capability": false,
+      "semantics": "Reserved. A worker that does not advertise it rejects with RG_UNSUPPORTED_TRANSITION; no approximation."
+    },
+    "fade_black": {
+      "since": "v1",
+      "capability": false,
+      "semantics": "Reserved. A worker that does not advertise it rejects with RG_UNSUPPORTED_TRANSITION; no approximation."
+    }
+  }
+}

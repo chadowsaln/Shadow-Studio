@@ -1,0 +1,323 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shadow.studio/schemas/rendergraph/1.json",
+  "title": "Shadow Studio RenderGraph v1",
+  "description": "Normative field-level schema for SS-ARCH-001 Appendix A / Appendix هـ. Closed objects: no unlisted field is accepted. Optionality is explicit; null is a value, absence is 'not applicable'. Cross-field invariants (track/kind pairing, overlap, range containment, transition boundaries) remain rejection rules V-01..V-22 and are not expressible here on purpose.",
+  "$ref": "#/$defs/RenderGraph",
+  "$defs": {
+    "UuidV7": {
+      "title": "UUIDv7",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "Blake3Hex": {
+      "title": "BLAKE3 digest, lowercase hex",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "FileUri": {
+      "title": "absolute file URI",
+      "type": "string",
+      "pattern": "^file:///"
+    },
+    "RgbaHex": {
+      "title": "colour, #RRGGBBAA",
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{8}$"
+    },
+    "RenderGraph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "graph_schema",
+        "sequence_id",
+        "project_revision",
+        "timebase",
+        "profile",
+        "range",
+        "background_rgba",
+        "tracks"
+      ],
+      "properties": {
+        "graph_schema": { "const": "shadow.rendergraph/1" },
+        "sequence_id": { "$ref": "#/$defs/UuidV7" },
+        "project_revision": { "type": "integer", "minimum": 0 },
+        "timebase": { "$ref": "#/$defs/Timebase" },
+        "profile": { "$ref": "#/$defs/Profile" },
+        "range": { "$ref": "#/$defs/Range" },
+        "background_rgba": { "$ref": "#/$defs/RgbaHex" },
+        "tracks": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/Track" }
+        }
+      }
+    },
+    "Timebase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ticks_per_second", "fps_num", "fps_den", "sample_rate", "channels"],
+      "properties": {
+        "ticks_per_second": { "const": 1000000 },
+        "fps_num": { "type": "integer", "minimum": 1 },
+        "fps_den": { "type": "integer", "minimum": 1 },
+        "sample_rate": { "enum": [44100, 48000, 96000] },
+        "channels": { "type": "integer", "minimum": 1, "maximum": 8 }
+      }
+    },
+    "Profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "pixel_format", "color_space", "interlaced"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "pixel_format": { "enum": ["yuv420p", "yuv422p", "yuv444p", "rgba"] },
+        "color_space": { "enum": ["bt709", "bt2020", "srgb"] },
+        "interlaced": { "const": false }
+      }
+    },
+    "Range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start_ticks", "duration_ticks"],
+      "properties": {
+        "start_ticks": { "type": "integer", "minimum": 0 },
+        "duration_ticks": { "type": "integer", "minimum": 1, "maximum": 21600000000 }
+      }
+    },
+    "Transform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "x_px",
+        "y_px",
+        "scale_x_ppm",
+        "scale_y_ppm",
+        "rotation_quarter_turns",
+        "anchor",
+        "crop_left_px",
+        "crop_right_px",
+        "crop_top_px",
+        "crop_bottom_px"
+      ],
+      "properties": {
+        "x_px": { "type": "integer" },
+        "y_px": { "type": "integer" },
+        "scale_x_ppm": { "type": "integer", "minimum": 1 },
+        "scale_y_ppm": { "type": "integer", "minimum": 1 },
+        "rotation_quarter_turns": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "anchor": { "enum": ["top_left", "center"] },
+        "crop_left_px": { "type": "integer", "minimum": 0 },
+        "crop_right_px": { "type": "integer", "minimum": 0 },
+        "crop_top_px": { "type": "integer", "minimum": 0 },
+        "crop_bottom_px": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "Track": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "position", "name", "enabled"],
+      "properties": {
+        "id": { "$ref": "#/$defs/UuidV7" },
+        "kind": { "enum": ["video", "audio", "overlay"] },
+        "position": { "type": "integer", "minimum": 0 },
+        "name": { "type": "string" },
+        "enabled": { "type": "boolean" },
+        "gain_mb": { "type": ["integer", "null"], "minimum": -60000, "maximum": 24000 },
+        "pan_ppm": { "type": ["integer", "null"], "minimum": -1000000, "maximum": 1000000 },
+        "clips": {
+          "type": ["array", "null"],
+          "maxItems": 2000,
+          "items": { "$ref": "#/$defs/VideoClip" }
+        },
+        "audio_clips": {
+          "type": ["array", "null"],
+          "maxItems": 2000,
+          "items": { "$ref": "#/$defs/AudioClip" }
+        },
+        "text_layers": {
+          "type": ["array", "null"],
+          "maxItems": 200,
+          "items": { "$ref": "#/$defs/TextLayer" }
+        },
+        "transitions": {
+          "type": ["array", "null"],
+          "maxItems": 2000,
+          "items": { "$ref": "#/$defs/Transition" }
+        }
+      }
+    },
+    "VideoClip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "asset_id",
+        "kind",
+        "source_uri",
+        "source_hash",
+        "stream_index",
+        "timeline_start_ticks",
+        "duration_ticks",
+        "source_in_ticks",
+        "speed_num",
+        "speed_den",
+        "opacity_ppm",
+        "enabled",
+        "transform",
+        "effects"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/UuidV7" },
+        "asset_id": { "anyOf": [{ "$ref": "#/$defs/UuidV7" }, { "type": "null" }] },
+        "kind": { "enum": ["video", "image", "color", "adjustment"] },
+        "source_uri": { "anyOf": [{ "$ref": "#/$defs/FileUri" }, { "type": "null" }] },
+        "source_hash": { "anyOf": [{ "$ref": "#/$defs/Blake3Hex" }, { "type": "null" }] },
+        "stream_index": { "type": "integer", "minimum": -1 },
+        "timeline_start_ticks": { "type": "integer", "minimum": 0 },
+        "duration_ticks": { "type": "integer", "minimum": 1 },
+        "source_in_ticks": { "type": "integer", "minimum": 0 },
+        "speed_num": { "type": "integer", "minimum": 1 },
+        "speed_den": { "type": "integer", "minimum": 1 },
+        "opacity_ppm": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "enabled": { "type": "boolean" },
+        "label": { "type": ["string", "null"], "maxLength": 256 },
+        "transform": { "$ref": "#/$defs/Transform" },
+        "effects": {
+          "type": "array",
+          "maxItems": 16,
+          "items": { "$ref": "#/$defs/Effect" }
+        }
+      }
+    },
+    "Effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "effect_key", "enabled", "params"],
+      "properties": {
+        "id": { "$ref": "#/$defs/UuidV7" },
+        "effect_key": { "type": "string", "pattern": "^shadow\\.[a-z0-9_.]+$" },
+        "enabled": { "type": "boolean" },
+        "params": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/Param" }
+        }
+      }
+    },
+    "Param": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "value", "keyframes"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "type": { "enum": ["int", "ppm", "color", "enum", "string", "bool"] },
+        "value": { "type": ["integer", "boolean", "string"] },
+        "keyframes": {
+          "type": "array",
+          "maxItems": 240,
+          "items": { "$ref": "#/$defs/Keyframe" }
+        }
+      }
+    },
+    "Keyframe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["at_ticks", "value", "easing"],
+      "properties": {
+        "at_ticks": { "type": "integer", "minimum": 0 },
+        "value": { "type": ["integer", "boolean", "string"] },
+        "easing": { "enum": ["linear", "ease_in", "ease_out", "ease_in_out", "step"] }
+      }
+    },
+    "Transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "at_ticks", "duration_ticks", "from_clip_id", "to_clip_id"],
+      "properties": {
+        "id": { "$ref": "#/$defs/UuidV7" },
+        "kind": { "enum": ["crossfade", "dissolve", "wipe_left", "wipe_right", "fade_black"] },
+        "at_ticks": { "type": "integer", "minimum": 0 },
+        "duration_ticks": { "type": "integer", "minimum": 1 },
+        "from_clip_id": { "$ref": "#/$defs/UuidV7" },
+        "to_clip_id": { "$ref": "#/$defs/UuidV7" }
+      }
+    },
+    "TextLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "raster_uri",
+        "raster_hash",
+        "raster_width",
+        "raster_height",
+        "start_ticks",
+        "duration_ticks",
+        "opacity_ppm",
+        "transform",
+        "animation_in",
+        "animation_out"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/UuidV7" },
+        "raster_uri": { "$ref": "#/$defs/FileUri" },
+        "raster_hash": { "$ref": "#/$defs/Blake3Hex" },
+        "raster_width": { "type": "integer", "minimum": 1 },
+        "raster_height": { "type": "integer", "minimum": 1 },
+        "start_ticks": { "type": "integer", "minimum": 0 },
+        "duration_ticks": { "type": "integer", "minimum": 1 },
+        "opacity_ppm": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "transform": { "$ref": "#/$defs/Transform" },
+        "animation_in": { "$ref": "#/$defs/Animation" },
+        "animation_out": { "$ref": "#/$defs/Animation" }
+      }
+    },
+    "Animation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "duration_ticks"],
+      "properties": {
+        "kind": { "enum": ["none", "fade", "slide"] },
+        "duration_ticks": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "AudioClip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "asset_id",
+        "source_uri",
+        "source_hash",
+        "stream_index",
+        "timeline_start_ticks",
+        "duration_ticks",
+        "source_in_ticks",
+        "speed_num",
+        "speed_den",
+        "gain_mb",
+        "fade_in_ticks",
+        "fade_out_ticks",
+        "enabled"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/UuidV7" },
+        "asset_id": { "anyOf": [{ "$ref": "#/$defs/UuidV7" }, { "type": "null" }] },
+        "source_uri": { "anyOf": [{ "$ref": "#/$defs/FileUri" }, { "type": "null" }] },
+        "source_hash": { "anyOf": [{ "$ref": "#/$defs/Blake3Hex" }, { "type": "null" }] },
+        "stream_index": { "type": "integer", "minimum": -1 },
+        "timeline_start_ticks": { "type": "integer", "minimum": 0 },
+        "duration_ticks": { "type": "integer", "minimum": 1 },
+        "source_in_ticks": { "type": "integer", "minimum": 0 },
+        "speed_num": { "type": "integer", "minimum": 1 },
+        "speed_den": { "type": "integer", "minimum": 1 },
+        "gain_mb": { "type": "integer", "minimum": -60000, "maximum": 24000 },
+        "fade_in_ticks": { "type": "integer", "minimum": 0 },
+        "fade_out_ticks": { "type": "integer", "minimum": 0 },
+        "enabled": { "type": "boolean" }
+      }
+    }
+  }
+}

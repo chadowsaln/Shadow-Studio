@@ -1,0 +1,739 @@
+{
+  "envelope_example": {
+    "protocol_version": 1,
+    "message_id": "0199a3f0-6b1e-7c4d-9f22-0a1b2c3d4e5f",
+    "correlation_id": "0199a3f0-6b1e-7c4d-9f22-1f2e3d4c5b6a",
+    "type": "render_start",
+    "sent_at_unix_ms": 1763300000000,
+    "body": {}
+  },
+  "graph": {
+    "graph_schema": "shadow.rendergraph/1",
+    "sequence_id": "0198f3b2-7c41-7f0a-9a1e-3d1c2b4a5e60",
+    "project_revision": 218,
+    "timebase": {
+      "ticks_per_second": 1000000,
+      "fps_num": 30000,
+      "fps_den": 1001,
+      "sample_rate": 48000,
+      "channels": 2
+    },
+    "profile": {
+      "width": 1920,
+      "height": 1080,
+      "pixel_format": "yuv420p",
+      "color_space": "bt709",
+      "interlaced": false
+    },
+    "range": {
+      "start_ticks": 0,
+      "duration_ticks": 10000000
+    },
+    "background_rgba": "#000000FF",
+    "tracks": [
+      {
+        "id": "0198f3b2-9000-7000-8000-000000000001",
+        "kind": "video",
+        "position": 0,
+        "name": "V1",
+        "enabled": true,
+        "clips": [
+          {
+            "id": "0198f3b3-0001-7000-8000-0000000000a1",
+            "asset_id": "0198f3b2-b000-7000-8000-0000000000aa",
+            "kind": "video",
+            "source_uri": "file:///media/user/broll/intro-4k.mp4",
+            "source_hash": "9f2c1d4e5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f",
+            "stream_index": 0,
+            "timeline_start_ticks": 0,
+            "duration_ticks": 4000000,
+            "source_in_ticks": 500000,
+            "speed_num": 1,
+            "speed_den": 1,
+            "opacity_ppm": 1000000,
+            "enabled": true,
+            "label": "intro",
+            "transform": {
+              "x_px": 0,
+              "y_px": 0,
+              "scale_x_ppm": 1000000,
+              "scale_y_ppm": 1000000,
+              "rotation_quarter_turns": 0,
+              "anchor": "center",
+              "crop_left_px": 0,
+              "crop_right_px": 0,
+              "crop_top_px": 0,
+              "crop_bottom_px": 0
+            },
+            "effects": [
+              {
+                "id": "0198f3b3-1001-7000-8000-0000000000e1",
+                "effect_key": "shadow.blur.gaussian",
+                "enabled": true,
+                "params": [
+                  {
+                    "name": "radius_px",
+                    "type": "int",
+                    "value": 12,
+                    "keyframes": []
+                  },
+                  {
+                    "name": "amount_ppm",
+                    "type": "ppm",
+                    "value": 0,
+                    "keyframes": [
+                      {
+                        "at_ticks": 0,
+                        "value": 0,
+                        "easing": "linear"
+                      },
+                      {
+                        "at_ticks": 2000000,
+                        "value": 500000,
+                        "easing": "ease_in_out"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "0198f3b3-0002-7000-8000-0000000000a2",
+            "asset_id": "0198f3b2-b000-7000-8000-0000000000ab",
+            "kind": "video",
+            "source_uri": "file:///media/user/broll/outro-hd.mp4",
+            "source_hash": "1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809",
+            "stream_index": 0,
+            "timeline_start_ticks": 4000000,
+            "duration_ticks": 6000000,
+            "source_in_ticks": 0,
+            "speed_num": 1,
+            "speed_den": 1,
+            "opacity_ppm": 1000000,
+            "enabled": true,
+            "label": "",
+            "transform": {
+              "x_px": 0,
+              "y_px": 0,
+              "scale_x_ppm": 1000000,
+              "scale_y_ppm": 1000000,
+              "rotation_quarter_turns": 0,
+              "anchor": "center",
+              "crop_left_px": 0,
+              "crop_right_px": 0,
+              "crop_top_px": 0,
+              "crop_bottom_px": 0
+            },
+            "effects": []
+          }
+        ],
+        "transitions": [
+          {
+            "id": "0198f3b4-0001-7000-8000-0000000000c1",
+            "kind": "crossfade",
+            "at_ticks": 4000000,
+            "duration_ticks": 1000000,
+            "from_clip_id": "0198f3b3-0001-7000-8000-0000000000a1",
+            "to_clip_id": "0198f3b3-0002-7000-8000-0000000000a2"
+          }
+        ]
+      },
+      {
+        "id": "0198f3b2-9000-7000-8000-000000000002",
+        "kind": "overlay",
+        "position": 1,
+        "name": "T1",
+        "enabled": true,
+        "text_layers": [
+          {
+            "id": "0198f3b5-0001-7000-8000-0000000000d1",
+            "raster_uri": "file:///home/user/.cache/shadow-studio/derived/4f/4f9c2d1e8a7b.rgba",
+            "raster_hash": "4f9c2d1e8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d",
+            "raster_width": 1200,
+            "raster_height": 180,
+            "start_ticks": 1000000,
+            "duration_ticks": 3000000,
+            "opacity_ppm": 1000000,
+            "transform": {
+              "x_px": 0,
+              "y_px": 820,
+              "scale_x_ppm": 1000000,
+              "scale_y_ppm": 1000000,
+              "rotation_quarter_turns": 0,
+              "anchor": "top_left",
+              "crop_left_px": 0,
+              "crop_right_px": 0,
+              "crop_top_px": 0,
+              "crop_bottom_px": 0
+            },
+            "animation_in": {
+              "kind": "fade",
+              "duration_ticks": 250000
+            },
+            "animation_out": {
+              "kind": "none",
+              "duration_ticks": 0
+            }
+          }
+        ]
+      },
+      {
+        "id": "0198f3b2-9000-7000-8000-000000000003",
+        "kind": "audio",
+        "position": 2,
+        "name": "A1",
+        "enabled": true,
+        "gain_mb": 0,
+        "pan_ppm": 0,
+        "audio_clips": [
+          {
+            "id": "0198f3b6-0001-7000-8000-0000000000f1",
+            "asset_id": "0198f3b2-b000-7000-8000-0000000000ac",
+            "source_uri": "file:///media/user/audio/vo-take3.wav",
+            "source_hash": "7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e",
+            "stream_index": 0,
+            "timeline_start_ticks": 0,
+            "duration_ticks": 10000000,
+            "source_in_ticks": 0,
+            "speed_num": 1,
+            "speed_den": 1,
+            "gain_mb": -3000,
+            "fade_in_ticks": 200000,
+            "fade_out_ticks": 400000,
+            "enabled": true
+          }
+        ]
+      }
+    ]
+  },
+  "preview_open_request": {
+    "session_id": "0199a3f2-1111-7000-8000-000000000002",
+    "mode": "play",
+    "start_tick": 0,
+    "viewport": {
+      "width": 960,
+      "height": 540,
+      "quality": "standard",
+      "include_audio": true
+    },
+    "graph": {
+      "graph_schema": "shadow.rendergraph/1",
+      "sequence_id": "0198f3b2-7c41-7f0a-9a1e-3d1c2b4a5e60",
+      "project_revision": 218,
+      "timebase": {
+        "ticks_per_second": 1000000,
+        "fps_num": 30000,
+        "fps_den": 1001,
+        "sample_rate": 48000,
+        "channels": 2
+      },
+      "profile": {
+        "width": 1920,
+        "height": 1080,
+        "pixel_format": "yuv420p",
+        "color_space": "bt709",
+        "interlaced": false
+      },
+      "range": {
+        "start_ticks": 0,
+        "duration_ticks": 10000000
+      },
+      "background_rgba": "#000000FF",
+      "tracks": []
+    }
+  },
+  "preview_open_response": {
+    "session_id": "0199a3f2-1111-7000-8000-000000000002",
+    "stream_url": "http://127.0.0.1:45871/preview/0199a3f2-1111-7000-8000-000000000002/stream",
+    "frame_url_template": "http://127.0.0.1:45871/preview/0199a3f2-1111-7000-8000-000000000002/frame?tick={tick}",
+    "duration_ticks": 10000000,
+    "audio": true,
+    "profile": {
+      "width": 960,
+      "height": 540,
+      "fps_num": 30000,
+      "fps_den": 1001
+    }
+  },
+  "render_start_request": {
+    "job_id": "0199a3f1-0c00-7000-8000-000000000001",
+    "progress_interval_ms": 250,
+    "graph": {
+      "graph_schema": "shadow.rendergraph/1",
+      "sequence_id": "0198f3b2-7c41-7f0a-9a1e-3d1c2b4a5e60",
+      "project_revision": 218,
+      "timebase": {
+        "ticks_per_second": 1000000,
+        "fps_num": 30000,
+        "fps_den": 1001,
+        "sample_rate": 48000,
+        "channels": 2
+      },
+      "profile": {
+        "width": 1920,
+        "height": 1080,
+        "pixel_format": "yuv420p",
+        "color_space": "bt709",
+        "interlaced": false
+      },
+      "range": {
+        "start_ticks": 0,
+        "duration_ticks": 10000000
+      },
+      "background_rgba": "#000000FF",
+      "tracks": []
+    },
+    "preset": {
+      "container": "mp4",
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "width": 1920,
+      "height": 1080,
+      "fps_num": 30000,
+      "fps_den": 1001,
+      "video_bitrate_kbps": 12000,
+      "crf": null,
+      "audio_bitrate_kbps": 192,
+      "faststart": true,
+      "loudness_target_lufs": -14
+    },
+    "output": {
+      "uri": "file:///home/user/Videos/shadow-out/final-v3.mp4",
+      "overwrite": false
+    }
+  },
+  "render_http_request": {
+    "sequence_id": "0198f3b2-7c41-7f0a-9a1e-3d1c2b4a5e60",
+    "project_revision": 218,
+    "preset": {
+      "container": "mp4",
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "width": 1920,
+      "height": 1080,
+      "fps_num": 30000,
+      "fps_den": 1001,
+      "video_bitrate_kbps": 12000,
+      "crf": null,
+      "audio_bitrate_kbps": 192,
+      "faststart": true,
+      "loudness_target_lufs": -14
+    },
+    "output_uri": "file:///home/user/Videos/shadow-out/final-v3.mp4",
+    "range": {
+      "start_ticks": 0,
+      "duration_ticks": 10000000
+    },
+    "overwrite": false
+  },
+  "render_http_response": {
+    "id": "0199a3f1-0c00-7000-8000-000000000001",
+    "state": "queued",
+    "project_revision": 218,
+    "progress_ppm": 0,
+    "frames_total": 300,
+    "output_uri": "file:///home/user/Videos/shadow-out/final-v3.mp4",
+    "created_at": "2026-11-16T12:00:00Z"
+  },
+  "preview_http_request": {
+    "sequence_id": "0198f3b2-7c41-7f0a-9a1e-3d1c2b4a5e60",
+    "mode": "scrub",
+    "start_tick": 0,
+    "viewport": {
+      "width": 960,
+      "height": 540,
+      "quality": "draft",
+      "include_audio": false
+    }
+  },
+  "preview_http_response": {
+    "session_id": "0199a3f2-1111-7000-8000-000000000002",
+    "mode": "scrub",
+    "stream_url": "http://127.0.0.1:45871/preview/0199a3f2-1111-7000-8000-000000000002/stream",
+    "frame_url_template": "http://127.0.0.1:45871/preview/0199a3f2-1111-7000-8000-000000000002/frame?tick={tick}",
+    "duration_ticks": 10000000,
+    "audio": false,
+    "profile": {
+      "width": 960,
+      "height": 540,
+      "fps_num": 30000,
+      "fps_den": 1001
+    }
+  },
+  "preview_cmd_request": {
+    "session_id": "0199a3f2-1111-7000-8000-000000000002",
+    "op": "seek",
+    "tick": 1500000
+  },
+  "preview_cmd_ack": {
+    "session_id": "0199a3f2-1111-7000-8000-000000000002",
+    "op": "seek",
+    "state": "seeking",
+    "rendered_tick": 1500000
+  },
+  "render_cancel_request": {
+    "job_id": "0199a3f1-0c00-7000-8000-000000000001"
+  },
+  "hello_request": {
+    "protocol_version": 1,
+    "min_supported": 1,
+    "engine_version": "mlt-shim/0.1.0+libmlt-7.28",
+    "capabilities": {
+      "filters": [
+        "shadow.blur.gaussian",
+        "shadow.color_balance"
+      ],
+      "transitions": [
+        "crossfade",
+        "dissolve"
+      ],
+      "containers": [
+        "mp4",
+        "webm",
+        "wav"
+      ],
+      "video_codecs": [
+        "h264",
+        "hevc",
+        "vp9"
+      ],
+      "audio_codecs": [
+        "aac",
+        "opus",
+        "pcm_s16le"
+      ]
+    }
+  },
+  "hello_ack": {
+    "protocol_version": 1,
+    "engine_version": "mlt-shim/0.1.0+libmlt-7.28",
+    "accepted": true
+  },
+  "ipc_error": {
+    "code": "ENGINE_CRASH",
+    "category": "engine",
+    "detail": "worker exited with signal 11 during frame 421",
+    "retryable": true,
+    "job_id": "0199a3f1-0c00-7000-8000-000000000001",
+    "context": {
+      "frame": 421,
+      "exit_code": 139
+    }
+  },
+  "probe_request": {
+    "path": "file:///media/user/broll/intro-4k.mp4",
+    "timeout_ms": 15000,
+    "want_thumbnail": true
+  },
+  "probe_result": {
+    "asset_hash": "9f2c1d4e5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f",
+    "size_bytes": 184320000,
+    "duration_ticks": 42000000,
+    "streams": [
+      {
+        "index": 0,
+        "media_type": "video",
+        "codec": "hevc",
+        "width": 3840,
+        "height": 2160,
+        "fps_num": 30000,
+        "fps_den": 1001,
+        "sample_rate": null,
+        "channels": null,
+        "bit_depth": 10,
+        "rotation": 0,
+        "start_ticks": 0,
+        "duration_ticks": 42000000,
+        "language": null
+      },
+      {
+        "index": 1,
+        "media_type": "audio",
+        "codec": "aac",
+        "width": null,
+        "height": null,
+        "fps_num": null,
+        "fps_den": null,
+        "sample_rate": 48000,
+        "channels": 2,
+        "bit_depth": 16,
+        "rotation": 0,
+        "start_ticks": 0,
+        "duration_ticks": 42000000,
+        "language": "ar"
+      }
+    ],
+    "warnings": [
+      "MEDIA_VFR_NORMALIZED"
+    ]
+  },
+  "ensure_derived_request": {
+    "cache_key": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "kind": "proxy",
+    "source_uri": "file:///media/user/broll/intro-4k.mp4",
+    "source_hash": "9f2c1d4e5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f",
+    "priority": 2,
+    "target_width": 960,
+    "target_height": 540,
+    "target_fps_num": 30000,
+    "target_fps_den": 1001
+  },
+  "ensure_derived_result": {
+    "cache_key": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "path": "file:///home/user/.cache/shadow-studio/derived/bb/proxy.mp4",
+    "bytes": 24117248,
+    "width": 960,
+    "height": 540,
+    "duration_ticks": 42000000
+  },
+  "job_status_request": {
+    "job_id": "0199a3f1-0c00-7000-8000-000000000001",
+    "kind": "render"
+  },
+  "job_status_result": {
+    "job_id": "0199a3f1-0c00-7000-8000-000000000001",
+    "kind": "render",
+    "state": "running",
+    "progress_ppm": 420000,
+    "frames_done": 126,
+    "frames_total": 300,
+    "rendered_tick": null,
+    "error_code": null,
+    "error_detail": null
+  },
+  "derived_cancel_request": {
+    "cache_key": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "derived_cancel_ack": {
+    "cache_key": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "cancelled": true
+  },
+  "health_result": {
+    "ok": true,
+    "engine_version": "mlt-shim/0.1.0+libmlt-7.28",
+    "protocol_version": 1,
+    "gpu_present": false,
+    "degraded": [
+      "preview_hw_decode"
+    ],
+    "active_jobs": 2
+  },
+  "job_event": {
+    "job_id": "0199a3f1-0c00-7000-8000-000000000001",
+    "kind": "render",
+    "type": "progress",
+    "progress_ppm": 430000,
+    "frames_done": 129,
+    "rendered_tick": null,
+    "state": null,
+    "error_code": null
+  },
+  "project_create_request": {
+    "name": "قناة الشادو — الحلقة 12",
+    "location_dir": "file:///home/user/Projects",
+    "profile": {
+      "width": 1920,
+      "height": 1080,
+      "fps_num": 30000,
+      "fps_den": 1001,
+      "sample_rate": 48000,
+      "channels": 2
+    }
+  },
+  "project_dto": {
+    "id": "0198f3b2-7c41-7f0a-9a1e-3d1c2b4a5e60",
+    "name": "قناة الشادو — الحلقة 12",
+    "revision": 218,
+    "schema_version": 1,
+    "path": "file:///home/user/Projects/ep12.ssproj",
+    "created_at": "2026-11-10T09:12:00Z",
+    "updated_at": "2026-11-16T12:00:00Z",
+    "profile": {
+      "width": 1920,
+      "height": 1080,
+      "fps_num": 30000,
+      "fps_den": 1001,
+      "sample_rate": 48000,
+      "channels": 2
+    },
+    "sequence_count": 2
+  },
+  "project_open_request": {
+    "path": "file:///home/user/Projects/ep12.ssproj"
+  },
+  "project_save_result": {
+    "revision": 218,
+    "saved_at": "2026-11-16T12:00:30Z",
+    "snapshot_bytes": 41943040
+  },
+  "project_close_request": {
+    "flush": true
+  },
+  "import_request": {
+    "paths": [
+      "file:///media/user/broll/intro-4k.mp4",
+      "file:///media/user/audio/vo-take3.wav"
+    ],
+    "options": {
+      "proxy_policy": "auto",
+      "generate_thumbnails": true,
+      "generate_waveform": true
+    }
+  },
+  "import_accepted": {
+    "import_id": "0199a3f7-0000-7000-8000-000000000010",
+    "accepted": [
+      "file:///media/user/broll/intro-4k.mp4",
+      "file:///media/user/audio/vo-take3.wav"
+    ],
+    "rejected": [
+      {
+        "path": "file:///media/user/broll/broken.mov",
+        "code": "MEDIA_UNSUPPORTED"
+      }
+    ],
+    "submitted_at": "2026-11-16T12:01:00Z"
+  },
+  "import_status_dto": {
+    "import_id": "0199a3f7-0000-7000-8000-000000000010",
+    "state": "running",
+    "progress_ppm": 600000,
+    "assets": [
+      {
+        "asset_id": "0198f3b2-b000-7000-8000-0000000000aa",
+        "path": "file:///media/user/broll/intro-4k.mp4",
+        "status": "ready",
+        "code": null
+      }
+    ],
+    "started_at": "2026-11-16T12:01:01Z",
+    "finished_at": null
+  },
+  "asset_dto": {
+    "id": "0198f3b2-b000-7000-8000-0000000000aa",
+    "kind": "video",
+    "display_name": "intro-4k.mp4",
+    "source_uri": "file:///media/user/broll/intro-4k.mp4",
+    "source_hash": "9f2c1d4e5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f",
+    "size_bytes": 184320000,
+    "duration_ticks": 42000000,
+    "missing": false,
+    "imported_at": "2026-11-10T09:20:00Z",
+    "streams": [
+      {
+        "index": 0,
+        "media_type": "video",
+        "codec": "hevc",
+        "width": 3840,
+        "height": 2160,
+        "fps_num": 30000,
+        "fps_den": 1001,
+        "sample_rate": null,
+        "channels": null,
+        "bit_depth": 10,
+        "rotation": 0,
+        "start_ticks": 0,
+        "duration_ticks": 42000000,
+        "language": null
+      }
+    ]
+  },
+  "job_status_dto": {
+    "id": "0199a3f1-0c00-7000-8000-000000000001",
+    "kind": "import",
+    "state": "succeeded",
+    "progress_ppm": 1000000,
+    "frames_done": null,
+    "frames_total": null,
+    "error_code": null,
+    "error_detail": null,
+    "created_at": "2026-11-16T12:01:00Z",
+    "started_at": "2026-11-16T12:01:01Z",
+    "finished_at": "2026-11-16T12:01:09Z"
+  },
+  "subscribe_request": {
+    "topics": [
+      "render.jobs",
+      "ai.proposals",
+      "timeline"
+    ],
+    "since_seq": 10430
+  },
+  "ai_submit_request": {
+    "capability": "captions",
+    "provider": "openai",
+    "model": "gpt-4o-transcribe",
+    "inputs": [
+      {
+        "kind": "asset_range",
+        "asset_id": "0198f3b2-b000-7000-8000-0000000000aa",
+        "start_ticks": 0,
+        "end_ticks": 120000000,
+        "text": null
+      }
+    ],
+    "options": {
+      "language": "ar",
+      "diarize": false
+    },
+    "idempotency_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "ai_job_dto": {
+    "id": "0199a3f8-0000-7000-8000-000000000020",
+    "capability": "captions",
+    "provider": "openai",
+    "model": "gpt-4o-transcribe",
+    "state": "succeeded",
+    "attempts": 1,
+    "progress_ppm": 1000000,
+    "cost_microusd": 42000,
+    "created_at": "2026-11-16T12:02:00Z",
+    "updated_at": "2026-11-16T12:02:40Z",
+    "summary": "37 مقطع ترجمة عربية بثقة متوسطة 0.91",
+    "artifacts": [
+      {
+        "kind": "transcript",
+        "path": "file:///home/user/.cache/shadow-studio/derived/ai/captions-ar.json",
+        "width": null,
+        "height": null,
+        "duration_ticks": 120000000
+      }
+    ],
+    "error_code": null,
+    "error_retryable": null
+  },
+  "ai_proposal_dto": {
+    "id": "0199a3f8-1000-7000-8000-000000000021",
+    "ai_job_id": "0199a3f8-0000-7000-8000-000000000020",
+    "kind": "captions",
+    "base_revision": 218,
+    "ops_count": 37,
+    "preview_start_ticks": 0,
+    "preview_end_ticks": 120000000,
+    "summary": "37 مقطع ترجمة عربية",
+    "accepted_at": null
+  },
+  "ai_accept_request": {
+    "label": "captions-ar"
+  },
+  "ai_accept_result": {
+    "proposal_id": "0199a3f8-1000-7000-8000-000000000021",
+    "revision": 219,
+    "applied_ops": 37
+  },
+  "problem_dto": {
+    "type": "https://shadow.studio/problems/revision-mismatch",
+    "title": "Revision mismatch",
+    "status": 409,
+    "code": "CONFLICT_REVISION_MISMATCH",
+    "detail": "If-Match 218 does not match current revision 219",
+    "instance": "/api/v1/timeline/commands",
+    "correlation_id": "0199a3f9-0000-7000-8000-000000000030",
+    "retryable": true,
+    "context": {
+      "expected": 218,
+      "actual": 219
+    }
+  }
+}

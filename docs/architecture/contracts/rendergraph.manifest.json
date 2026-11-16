@@ -1,0 +1,2293 @@
+{
+  "version": 1,
+  "document": "SS-ARCH-001 — Appendix A (RenderGraph & boundary contract)",
+  "notes": "Machine-readable field list for docs/architecture/contracts/rendergraph.example.json. Path syntax: dotted, [] = array element. 'graph_ref' means the subtree is a full RenderGraph and is validated against the graph.* rows.",
+  "paths": [
+    {
+      "path": "envelope_example.protocol_version",
+      "type": "int",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "envelope_example.message_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "envelope_example.correlation_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "envelope_example.type",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "envelope_example.sent_at_unix_ms",
+      "type": "int",
+      "unit": "ms",
+      "nullable": false
+    },
+    {
+      "path": "envelope_example.body",
+      "type": "object",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "graph.graph_schema",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "graph.sequence_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "graph.project_revision",
+      "type": "int",
+      "unit": "revision",
+      "nullable": false
+    },
+    {
+      "path": "graph.timebase.ticks_per_second",
+      "type": "int",
+      "unit": "hz",
+      "nullable": false
+    },
+    {
+      "path": "graph.timebase.fps_num",
+      "type": "int",
+      "unit": "ratio",
+      "nullable": false
+    },
+    {
+      "path": "graph.timebase.fps_den",
+      "type": "int",
+      "unit": "ratio",
+      "nullable": false
+    },
+    {
+      "path": "graph.timebase.sample_rate",
+      "type": "int",
+      "unit": "hz",
+      "nullable": false
+    },
+    {
+      "path": "graph.timebase.channels",
+      "type": "int",
+      "unit": "count",
+      "nullable": false
+    },
+    {
+      "path": "graph.profile.width",
+      "type": "int",
+      "unit": "px",
+      "nullable": false
+    },
+    {
+      "path": "graph.profile.height",
+      "type": "int",
+      "unit": "px",
+      "nullable": false
+    },
+    {
+      "path": "graph.profile.pixel_format",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "graph.profile.color_space",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "graph.profile.interlaced",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "graph.range",
+      "type": "object",
+      "unit": "range",
+      "nullable": false
+    },
+    {
+      "path": "graph.background_rgba",
+      "type": "string",
+      "unit": "rgba_hex",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].kind",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].position",
+      "type": "int",
+      "unit": "index",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].name",
+      "type": "string",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].enabled",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].gain_mb",
+      "type": "int",
+      "unit": "millibel",
+      "nullable": true
+    },
+    {
+      "path": "graph.tracks[].pan_ppm",
+      "type": "int",
+      "unit": "ppm",
+      "nullable": true
+    },
+    {
+      "path": "graph.tracks[].clips",
+      "type": "array",
+      "unit": "collection",
+      "nullable": true
+    },
+    {
+      "path": "graph.tracks[].audio_clips",
+      "type": "array",
+      "unit": "collection",
+      "nullable": true
+    },
+    {
+      "path": "graph.tracks[].text_layers",
+      "type": "array",
+      "unit": "collection",
+      "nullable": true
+    },
+    {
+      "path": "graph.tracks[].transitions",
+      "type": "array",
+      "unit": "collection",
+      "nullable": true
+    },
+    {
+      "path": "graph.tracks[].clips[].id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].clips[].asset_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": true
+    },
+    {
+      "path": "graph.tracks[].clips[].kind",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].clips[].source_uri",
+      "type": "string",
+      "unit": "file_uri",
+      "nullable": true
+    },
+    {
+      "path": "graph.tracks[].clips[].source_hash",
+      "type": "string",
+      "unit": "blake3_hex",
+      "nullable": true
+    },
+    {
+      "path": "graph.tracks[].clips[].stream_index",
+      "type": "int",
+      "unit": "index",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].clips[].timeline_start_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].clips[].duration_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].clips[].source_in_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].clips[].speed_num",
+      "type": "int",
+      "unit": "ratio",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].clips[].speed_den",
+      "type": "int",
+      "unit": "ratio",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].clips[].opacity_ppm",
+      "type": "int",
+      "unit": "ppm",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].clips[].enabled",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].clips[].label",
+      "type": "string",
+      "unit": "none",
+      "nullable": true
+    },
+    {
+      "path": "graph.tracks[].clips[].transform",
+      "type": "object",
+      "unit": "transform",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].clips[].effects",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].clips[].effects[].id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].clips[].effects[].effect_key",
+      "type": "string",
+      "unit": "registry_key",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].clips[].effects[].enabled",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].clips[].effects[].params",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].transitions[].id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].transitions[].kind",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].transitions[].at_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].transitions[].duration_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].transitions[].from_clip_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].transitions[].to_clip_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].text_layers[].id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].text_layers[].raster_uri",
+      "type": "string",
+      "unit": "file_uri",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].text_layers[].raster_hash",
+      "type": "string",
+      "unit": "blake3_hex",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].text_layers[].raster_width",
+      "type": "int",
+      "unit": "px",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].text_layers[].raster_height",
+      "type": "int",
+      "unit": "px",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].text_layers[].start_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].text_layers[].duration_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].text_layers[].opacity_ppm",
+      "type": "int",
+      "unit": "ppm",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].text_layers[].transform",
+      "type": "object",
+      "unit": "transform",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].text_layers[].animation_in.kind",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].text_layers[].animation_in.duration_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].text_layers[].animation_out.kind",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].text_layers[].animation_out.duration_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].audio_clips[].id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].audio_clips[].asset_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": true
+    },
+    {
+      "path": "graph.tracks[].audio_clips[].source_uri",
+      "type": "string",
+      "unit": "file_uri",
+      "nullable": true
+    },
+    {
+      "path": "graph.tracks[].audio_clips[].source_hash",
+      "type": "string",
+      "unit": "blake3_hex",
+      "nullable": true
+    },
+    {
+      "path": "graph.tracks[].audio_clips[].stream_index",
+      "type": "int",
+      "unit": "index",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].audio_clips[].timeline_start_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].audio_clips[].duration_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].audio_clips[].source_in_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].audio_clips[].speed_num",
+      "type": "int",
+      "unit": "ratio",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].audio_clips[].speed_den",
+      "type": "int",
+      "unit": "ratio",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].audio_clips[].gain_mb",
+      "type": "int",
+      "unit": "millibel",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].audio_clips[].fade_in_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].audio_clips[].fade_out_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "graph.tracks[].audio_clips[].enabled",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "preview_open_request.session_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "preview_open_request.mode",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "preview_open_request.start_tick",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "preview_open_request.viewport",
+      "type": "object",
+      "unit": "viewport",
+      "nullable": false
+    },
+    {
+      "path": "preview_open_request.graph",
+      "type": "graph_ref",
+      "unit": "graph",
+      "nullable": false
+    },
+    {
+      "path": "preview_open_response.session_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "preview_open_response.stream_url",
+      "type": "string",
+      "unit": "http_url",
+      "nullable": false
+    },
+    {
+      "path": "preview_open_response.frame_url_template",
+      "type": "string",
+      "unit": "http_url",
+      "nullable": false
+    },
+    {
+      "path": "preview_open_response.duration_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "preview_open_response.audio",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "preview_open_response.profile.width",
+      "type": "int",
+      "unit": "px",
+      "nullable": false
+    },
+    {
+      "path": "preview_open_response.profile.height",
+      "type": "int",
+      "unit": "px",
+      "nullable": false
+    },
+    {
+      "path": "preview_open_response.profile.fps_num",
+      "type": "int",
+      "unit": "ratio",
+      "nullable": false
+    },
+    {
+      "path": "preview_open_response.profile.fps_den",
+      "type": "int",
+      "unit": "ratio",
+      "nullable": false
+    },
+    {
+      "path": "render_start_request.job_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "render_start_request.progress_interval_ms",
+      "type": "int",
+      "unit": "ms",
+      "nullable": false
+    },
+    {
+      "path": "render_start_request.graph",
+      "type": "graph_ref",
+      "unit": "graph",
+      "nullable": false
+    },
+    {
+      "path": "render_start_request.preset",
+      "type": "object",
+      "unit": "preset",
+      "nullable": false
+    },
+    {
+      "path": "render_start_request.output.uri",
+      "type": "string",
+      "unit": "file_uri",
+      "nullable": false
+    },
+    {
+      "path": "render_start_request.output.overwrite",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "render_http_request.sequence_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "render_http_request.project_revision",
+      "type": "int",
+      "unit": "revision",
+      "nullable": false
+    },
+    {
+      "path": "render_http_request.preset",
+      "type": "object",
+      "unit": "preset",
+      "nullable": false
+    },
+    {
+      "path": "render_http_request.output_uri",
+      "type": "string",
+      "unit": "file_uri",
+      "nullable": false
+    },
+    {
+      "path": "render_http_request.range",
+      "type": "object",
+      "unit": "range",
+      "nullable": true
+    },
+    {
+      "path": "render_http_request.overwrite",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "render_http_response.id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "render_http_response.state",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "render_http_response.project_revision",
+      "type": "int",
+      "unit": "revision",
+      "nullable": false
+    },
+    {
+      "path": "render_http_response.progress_ppm",
+      "type": "int",
+      "unit": "ppm",
+      "nullable": false
+    },
+    {
+      "path": "render_http_response.frames_total",
+      "type": "int",
+      "unit": "count",
+      "nullable": true
+    },
+    {
+      "path": "render_http_response.output_uri",
+      "type": "string",
+      "unit": "file_uri",
+      "nullable": false
+    },
+    {
+      "path": "render_http_response.created_at",
+      "type": "string",
+      "unit": "iso8601",
+      "nullable": false
+    },
+    {
+      "path": "preview_http_request.sequence_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "preview_http_request.mode",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "preview_http_request.start_tick",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "preview_http_request.viewport",
+      "type": "object",
+      "unit": "viewport",
+      "nullable": false
+    },
+    {
+      "path": "preview_http_response.session_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "preview_http_response.mode",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "preview_http_response.stream_url",
+      "type": "string",
+      "unit": "http_url",
+      "nullable": false
+    },
+    {
+      "path": "preview_http_response.frame_url_template",
+      "type": "string",
+      "unit": "http_url",
+      "nullable": false
+    },
+    {
+      "path": "preview_http_response.duration_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "preview_http_response.audio",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "preview_http_response.profile.width",
+      "type": "int",
+      "unit": "px",
+      "nullable": false
+    },
+    {
+      "path": "preview_http_response.profile.height",
+      "type": "int",
+      "unit": "px",
+      "nullable": false
+    },
+    {
+      "path": "preview_http_response.profile.fps_num",
+      "type": "int",
+      "unit": "ratio",
+      "nullable": false
+    },
+    {
+      "path": "preview_http_response.profile.fps_den",
+      "type": "int",
+      "unit": "ratio",
+      "nullable": false
+    },
+    {
+      "path": "preview_cmd_request.session_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "preview_cmd_request.op",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "preview_cmd_request.tick",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": true
+    },
+    {
+      "path": "preview_cmd_ack.session_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "preview_cmd_ack.op",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "preview_cmd_ack.state",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "preview_cmd_ack.rendered_tick",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": true
+    },
+    {
+      "path": "render_cancel_request.job_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "hello_request.protocol_version",
+      "type": "int",
+      "unit": "revision",
+      "nullable": false
+    },
+    {
+      "path": "hello_request.min_supported",
+      "type": "int",
+      "unit": "revision",
+      "nullable": false
+    },
+    {
+      "path": "hello_request.engine_version",
+      "type": "string",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "hello_request.capabilities.filters",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "hello_request.capabilities.transitions",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "hello_request.capabilities.containers",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "hello_request.capabilities.video_codecs",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "hello_request.capabilities.audio_codecs",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "hello_ack.protocol_version",
+      "type": "int",
+      "unit": "revision",
+      "nullable": false
+    },
+    {
+      "path": "hello_ack.engine_version",
+      "type": "string",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "hello_ack.accepted",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "ipc_error.code",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "ipc_error.category",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "ipc_error.detail",
+      "type": "string",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "ipc_error.retryable",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "ipc_error.job_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": true
+    },
+    {
+      "path": "ipc_error.context",
+      "type": "object_open",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "probe_request.path",
+      "type": "string",
+      "unit": "file_uri",
+      "nullable": false
+    },
+    {
+      "path": "probe_request.timeout_ms",
+      "type": "int",
+      "unit": "ms",
+      "nullable": false
+    },
+    {
+      "path": "probe_request.want_thumbnail",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "probe_result.asset_hash",
+      "type": "string",
+      "unit": "blake3_hex",
+      "nullable": false
+    },
+    {
+      "path": "probe_result.size_bytes",
+      "type": "int",
+      "unit": "bytes",
+      "nullable": false
+    },
+    {
+      "path": "probe_result.duration_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "probe_result.streams",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "probe_result.warnings",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "ensure_derived_request.cache_key",
+      "type": "string",
+      "unit": "blake3_hex",
+      "nullable": false
+    },
+    {
+      "path": "ensure_derived_request.kind",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "ensure_derived_request.source_uri",
+      "type": "string",
+      "unit": "file_uri",
+      "nullable": false
+    },
+    {
+      "path": "ensure_derived_request.source_hash",
+      "type": "string",
+      "unit": "blake3_hex",
+      "nullable": false
+    },
+    {
+      "path": "ensure_derived_request.priority",
+      "type": "int",
+      "unit": "index",
+      "nullable": false
+    },
+    {
+      "path": "ensure_derived_request.target_width",
+      "type": "int",
+      "unit": "px",
+      "nullable": true
+    },
+    {
+      "path": "ensure_derived_request.target_height",
+      "type": "int",
+      "unit": "px",
+      "nullable": true
+    },
+    {
+      "path": "ensure_derived_request.target_fps_num",
+      "type": "int",
+      "unit": "ratio",
+      "nullable": true
+    },
+    {
+      "path": "ensure_derived_request.target_fps_den",
+      "type": "int",
+      "unit": "ratio",
+      "nullable": true
+    },
+    {
+      "path": "ensure_derived_result.cache_key",
+      "type": "string",
+      "unit": "blake3_hex",
+      "nullable": false
+    },
+    {
+      "path": "ensure_derived_result.path",
+      "type": "string",
+      "unit": "file_uri",
+      "nullable": false
+    },
+    {
+      "path": "ensure_derived_result.bytes",
+      "type": "int",
+      "unit": "bytes",
+      "nullable": false
+    },
+    {
+      "path": "ensure_derived_result.width",
+      "type": "int",
+      "unit": "px",
+      "nullable": true
+    },
+    {
+      "path": "ensure_derived_result.height",
+      "type": "int",
+      "unit": "px",
+      "nullable": true
+    },
+    {
+      "path": "ensure_derived_result.duration_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": true
+    },
+    {
+      "path": "job_status_request.job_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "job_status_request.kind",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "job_status_result.job_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "job_status_result.kind",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "job_status_result.state",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "job_status_result.progress_ppm",
+      "type": "int",
+      "unit": "ppm",
+      "nullable": false
+    },
+    {
+      "path": "job_status_result.frames_done",
+      "type": "int",
+      "unit": "count",
+      "nullable": false
+    },
+    {
+      "path": "job_status_result.frames_total",
+      "type": "int",
+      "unit": "count",
+      "nullable": true
+    },
+    {
+      "path": "job_status_result.rendered_tick",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": true
+    },
+    {
+      "path": "job_status_result.error_code",
+      "type": "string",
+      "unit": "enum",
+      "nullable": true
+    },
+    {
+      "path": "job_status_result.error_detail",
+      "type": "string",
+      "unit": "none",
+      "nullable": true
+    },
+    {
+      "path": "derived_cancel_request.cache_key",
+      "type": "string",
+      "unit": "blake3_hex",
+      "nullable": false
+    },
+    {
+      "path": "derived_cancel_ack.cache_key",
+      "type": "string",
+      "unit": "blake3_hex",
+      "nullable": false
+    },
+    {
+      "path": "derived_cancel_ack.cancelled",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "health_result.ok",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "health_result.engine_version",
+      "type": "string",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "health_result.protocol_version",
+      "type": "int",
+      "unit": "revision",
+      "nullable": false
+    },
+    {
+      "path": "health_result.gpu_present",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "health_result.degraded",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "health_result.active_jobs",
+      "type": "int",
+      "unit": "count",
+      "nullable": false
+    },
+    {
+      "path": "job_event.job_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "job_event.kind",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "job_event.type",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "job_event.progress_ppm",
+      "type": "int",
+      "unit": "ppm",
+      "nullable": true
+    },
+    {
+      "path": "job_event.frames_done",
+      "type": "int",
+      "unit": "count",
+      "nullable": true
+    },
+    {
+      "path": "job_event.rendered_tick",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": true
+    },
+    {
+      "path": "job_event.state",
+      "type": "string",
+      "unit": "enum",
+      "nullable": true
+    },
+    {
+      "path": "job_event.error_code",
+      "type": "string",
+      "unit": "enum",
+      "nullable": true
+    },
+    {
+      "path": "project_create_request.name",
+      "type": "string",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "project_create_request.location_dir",
+      "type": "string",
+      "unit": "file_uri",
+      "nullable": true
+    },
+    {
+      "path": "project_create_request.profile.width",
+      "type": "int",
+      "unit": "px",
+      "nullable": false
+    },
+    {
+      "path": "project_create_request.profile.height",
+      "type": "int",
+      "unit": "px",
+      "nullable": false
+    },
+    {
+      "path": "project_create_request.profile.fps_num",
+      "type": "int",
+      "unit": "ratio",
+      "nullable": false
+    },
+    {
+      "path": "project_create_request.profile.fps_den",
+      "type": "int",
+      "unit": "ratio",
+      "nullable": false
+    },
+    {
+      "path": "project_create_request.profile.sample_rate",
+      "type": "int",
+      "unit": "hz",
+      "nullable": false
+    },
+    {
+      "path": "project_create_request.profile.channels",
+      "type": "int",
+      "unit": "count",
+      "nullable": false
+    },
+    {
+      "path": "project_dto.id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "project_dto.name",
+      "type": "string",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "project_dto.revision",
+      "type": "int",
+      "unit": "revision",
+      "nullable": false
+    },
+    {
+      "path": "project_dto.schema_version",
+      "type": "int",
+      "unit": "revision",
+      "nullable": false
+    },
+    {
+      "path": "project_dto.path",
+      "type": "string",
+      "unit": "file_uri",
+      "nullable": false
+    },
+    {
+      "path": "project_dto.created_at",
+      "type": "string",
+      "unit": "iso8601",
+      "nullable": false
+    },
+    {
+      "path": "project_dto.updated_at",
+      "type": "string",
+      "unit": "iso8601",
+      "nullable": false
+    },
+    {
+      "path": "project_dto.profile.width",
+      "type": "int",
+      "unit": "px",
+      "nullable": false
+    },
+    {
+      "path": "project_dto.profile.height",
+      "type": "int",
+      "unit": "px",
+      "nullable": false
+    },
+    {
+      "path": "project_dto.profile.fps_num",
+      "type": "int",
+      "unit": "ratio",
+      "nullable": false
+    },
+    {
+      "path": "project_dto.profile.fps_den",
+      "type": "int",
+      "unit": "ratio",
+      "nullable": false
+    },
+    {
+      "path": "project_dto.profile.sample_rate",
+      "type": "int",
+      "unit": "hz",
+      "nullable": false
+    },
+    {
+      "path": "project_dto.profile.channels",
+      "type": "int",
+      "unit": "count",
+      "nullable": false
+    },
+    {
+      "path": "project_dto.sequence_count",
+      "type": "int",
+      "unit": "count",
+      "nullable": false
+    },
+    {
+      "path": "project_open_request.path",
+      "type": "string",
+      "unit": "file_uri",
+      "nullable": false
+    },
+    {
+      "path": "project_save_result.revision",
+      "type": "int",
+      "unit": "revision",
+      "nullable": false
+    },
+    {
+      "path": "project_save_result.saved_at",
+      "type": "string",
+      "unit": "iso8601",
+      "nullable": false
+    },
+    {
+      "path": "project_save_result.snapshot_bytes",
+      "type": "int",
+      "unit": "bytes",
+      "nullable": false
+    },
+    {
+      "path": "project_close_request.flush",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "import_request.paths",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "import_request.options.proxy_policy",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "import_request.options.generate_thumbnails",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "import_request.options.generate_waveform",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "import_accepted.import_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "import_accepted.accepted",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "import_accepted.rejected",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "import_accepted.submitted_at",
+      "type": "string",
+      "unit": "iso8601",
+      "nullable": false
+    },
+    {
+      "path": "import_accepted.rejected[].path",
+      "type": "string",
+      "unit": "file_uri",
+      "nullable": false
+    },
+    {
+      "path": "import_accepted.rejected[].code",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "import_status_dto.import_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "import_status_dto.state",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "import_status_dto.progress_ppm",
+      "type": "int",
+      "unit": "ppm",
+      "nullable": false
+    },
+    {
+      "path": "import_status_dto.assets",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "import_status_dto.started_at",
+      "type": "string",
+      "unit": "iso8601",
+      "nullable": false
+    },
+    {
+      "path": "import_status_dto.finished_at",
+      "type": "string",
+      "unit": "iso8601",
+      "nullable": true
+    },
+    {
+      "path": "import_status_dto.assets[].asset_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "import_status_dto.assets[].path",
+      "type": "string",
+      "unit": "file_uri",
+      "nullable": false
+    },
+    {
+      "path": "import_status_dto.assets[].status",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "import_status_dto.assets[].code",
+      "type": "string",
+      "unit": "enum",
+      "nullable": true
+    },
+    {
+      "path": "asset_dto.id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "asset_dto.kind",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "asset_dto.display_name",
+      "type": "string",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "asset_dto.source_uri",
+      "type": "string",
+      "unit": "file_uri",
+      "nullable": false
+    },
+    {
+      "path": "asset_dto.source_hash",
+      "type": "string",
+      "unit": "blake3_hex",
+      "nullable": false
+    },
+    {
+      "path": "asset_dto.size_bytes",
+      "type": "int",
+      "unit": "bytes",
+      "nullable": false
+    },
+    {
+      "path": "asset_dto.duration_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "asset_dto.missing",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "asset_dto.imported_at",
+      "type": "string",
+      "unit": "iso8601",
+      "nullable": false
+    },
+    {
+      "path": "asset_dto.streams",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "job_status_dto.id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "job_status_dto.kind",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "job_status_dto.state",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "job_status_dto.progress_ppm",
+      "type": "int",
+      "unit": "ppm",
+      "nullable": false
+    },
+    {
+      "path": "job_status_dto.frames_done",
+      "type": "int",
+      "unit": "count",
+      "nullable": true
+    },
+    {
+      "path": "job_status_dto.frames_total",
+      "type": "int",
+      "unit": "count",
+      "nullable": true
+    },
+    {
+      "path": "job_status_dto.error_code",
+      "type": "string",
+      "unit": "enum",
+      "nullable": true
+    },
+    {
+      "path": "job_status_dto.error_detail",
+      "type": "string",
+      "unit": "none",
+      "nullable": true
+    },
+    {
+      "path": "job_status_dto.created_at",
+      "type": "string",
+      "unit": "iso8601",
+      "nullable": false
+    },
+    {
+      "path": "job_status_dto.started_at",
+      "type": "string",
+      "unit": "iso8601",
+      "nullable": true
+    },
+    {
+      "path": "job_status_dto.finished_at",
+      "type": "string",
+      "unit": "iso8601",
+      "nullable": true
+    },
+    {
+      "path": "subscribe_request.topics",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "subscribe_request.since_seq",
+      "type": "int",
+      "unit": "count",
+      "nullable": false
+    },
+    {
+      "path": "ai_submit_request.capability",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "ai_submit_request.provider",
+      "type": "string",
+      "unit": "enum",
+      "nullable": true
+    },
+    {
+      "path": "ai_submit_request.model",
+      "type": "string",
+      "unit": "none",
+      "nullable": true
+    },
+    {
+      "path": "ai_submit_request.inputs",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "ai_submit_request.options",
+      "type": "object_open",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "ai_submit_request.idempotency_key",
+      "type": "string",
+      "unit": "blake3_hex",
+      "nullable": false
+    },
+    {
+      "path": "ai_submit_request.inputs[].kind",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "ai_submit_request.inputs[].asset_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": true
+    },
+    {
+      "path": "ai_submit_request.inputs[].start_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": true
+    },
+    {
+      "path": "ai_submit_request.inputs[].end_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": true
+    },
+    {
+      "path": "ai_submit_request.inputs[].text",
+      "type": "string",
+      "unit": "none",
+      "nullable": true
+    },
+    {
+      "path": "ai_job_dto.id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "ai_job_dto.capability",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "ai_job_dto.provider",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "ai_job_dto.model",
+      "type": "string",
+      "unit": "none",
+      "nullable": true
+    },
+    {
+      "path": "ai_job_dto.state",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "ai_job_dto.attempts",
+      "type": "int",
+      "unit": "count",
+      "nullable": false
+    },
+    {
+      "path": "ai_job_dto.progress_ppm",
+      "type": "int",
+      "unit": "ppm",
+      "nullable": false
+    },
+    {
+      "path": "ai_job_dto.cost_microusd",
+      "type": "int",
+      "unit": "microusd",
+      "nullable": true
+    },
+    {
+      "path": "ai_job_dto.created_at",
+      "type": "string",
+      "unit": "iso8601",
+      "nullable": false
+    },
+    {
+      "path": "ai_job_dto.updated_at",
+      "type": "string",
+      "unit": "iso8601",
+      "nullable": false
+    },
+    {
+      "path": "ai_job_dto.summary",
+      "type": "string",
+      "unit": "none",
+      "nullable": true
+    },
+    {
+      "path": "ai_job_dto.artifacts",
+      "type": "array",
+      "unit": "collection",
+      "nullable": false
+    },
+    {
+      "path": "ai_job_dto.error_code",
+      "type": "string",
+      "unit": "enum",
+      "nullable": true
+    },
+    {
+      "path": "ai_job_dto.error_retryable",
+      "type": "bool",
+      "unit": "none",
+      "nullable": true
+    },
+    {
+      "path": "ai_job_dto.artifacts[].kind",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "ai_job_dto.artifacts[].path",
+      "type": "string",
+      "unit": "file_uri",
+      "nullable": false
+    },
+    {
+      "path": "ai_job_dto.artifacts[].width",
+      "type": "int",
+      "unit": "px",
+      "nullable": true
+    },
+    {
+      "path": "ai_job_dto.artifacts[].height",
+      "type": "int",
+      "unit": "px",
+      "nullable": true
+    },
+    {
+      "path": "ai_job_dto.artifacts[].duration_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": true
+    },
+    {
+      "path": "ai_proposal_dto.id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "ai_proposal_dto.ai_job_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "ai_proposal_dto.kind",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "ai_proposal_dto.base_revision",
+      "type": "int",
+      "unit": "revision",
+      "nullable": false
+    },
+    {
+      "path": "ai_proposal_dto.ops_count",
+      "type": "int",
+      "unit": "count",
+      "nullable": false
+    },
+    {
+      "path": "ai_proposal_dto.preview_start_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "ai_proposal_dto.preview_end_ticks",
+      "type": "int",
+      "unit": "ticks",
+      "nullable": false
+    },
+    {
+      "path": "ai_proposal_dto.summary",
+      "type": "string",
+      "unit": "none",
+      "nullable": true
+    },
+    {
+      "path": "ai_proposal_dto.accepted_at",
+      "type": "string",
+      "unit": "iso8601",
+      "nullable": true
+    },
+    {
+      "path": "ai_accept_request.label",
+      "type": "string",
+      "unit": "none",
+      "nullable": true
+    },
+    {
+      "path": "ai_accept_result.proposal_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "ai_accept_result.revision",
+      "type": "int",
+      "unit": "revision",
+      "nullable": false
+    },
+    {
+      "path": "ai_accept_result.applied_ops",
+      "type": "int",
+      "unit": "count",
+      "nullable": false
+    },
+    {
+      "path": "problem_dto.type",
+      "type": "string",
+      "unit": "http_url",
+      "nullable": false
+    },
+    {
+      "path": "problem_dto.title",
+      "type": "string",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "problem_dto.status",
+      "type": "int",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "problem_dto.code",
+      "type": "string",
+      "unit": "enum",
+      "nullable": false
+    },
+    {
+      "path": "problem_dto.detail",
+      "type": "string",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "problem_dto.instance",
+      "type": "string",
+      "unit": "http_url",
+      "nullable": false
+    },
+    {
+      "path": "problem_dto.correlation_id",
+      "type": "string",
+      "unit": "uuid",
+      "nullable": false
+    },
+    {
+      "path": "problem_dto.retryable",
+      "type": "bool",
+      "unit": "none",
+      "nullable": false
+    },
+    {
+      "path": "problem_dto.context",
+      "type": "object_open",
+      "unit": "none",
+      "nullable": false
+    }
+  ],
+  "shared_types": {
+    "RangeV1": {
+      "applies_to_key": "range",
+      "fields": [
+        {
+          "field": "start_ticks",
+          "type": "int",
+          "unit": "ticks"
+        },
+        {
+          "field": "duration_ticks",
+          "type": "int",
+          "unit": "ticks"
+        }
+      ]
+    },
+    "TransformV1": {
+      "applies_to_key": "transform",
+      "fields": [
+        {
+          "field": "x_px",
+          "type": "int",
+          "unit": "px"
+        },
+        {
+          "field": "y_px",
+          "type": "int",
+          "unit": "px"
+        },
+        {
+          "field": "scale_x_ppm",
+          "type": "int",
+          "unit": "ppm"
+        },
+        {
+          "field": "scale_y_ppm",
+          "type": "int",
+          "unit": "ppm"
+        },
+        {
+          "field": "rotation_quarter_turns",
+          "type": "int",
+          "unit": "count"
+        },
+        {
+          "field": "anchor",
+          "type": "string",
+          "unit": "enum"
+        },
+        {
+          "field": "crop_left_px",
+          "type": "int",
+          "unit": "px"
+        },
+        {
+          "field": "crop_right_px",
+          "type": "int",
+          "unit": "px"
+        },
+        {
+          "field": "crop_top_px",
+          "type": "int",
+          "unit": "px"
+        },
+        {
+          "field": "crop_bottom_px",
+          "type": "int",
+          "unit": "px"
+        }
+      ]
+    },
+    "ParamV1": {
+      "applies_to_key": "params",
+      "fields": [
+        {
+          "field": "name",
+          "type": "string",
+          "unit": "registry_key"
+        },
+        {
+          "field": "type",
+          "type": "string",
+          "unit": "enum"
+        },
+        {
+          "field": "value",
+          "type": "variant",
+          "unit": "none"
+        },
+        {
+          "field": "keyframes",
+          "type": "array",
+          "unit": "collection"
+        }
+      ]
+    },
+    "KeyframeV1": {
+      "applies_to_key": "keyframes",
+      "fields": [
+        {
+          "field": "at_ticks",
+          "type": "int",
+          "unit": "ticks"
+        },
+        {
+          "field": "value",
+          "type": "variant",
+          "unit": "none"
+        },
+        {
+          "field": "easing",
+          "type": "string",
+          "unit": "enum"
+        }
+      ]
+    },
+    "ViewportV1": {
+      "applies_to_key": "viewport",
+      "fields": [
+        {
+          "field": "width",
+          "type": "int",
+          "unit": "px"
+        },
+        {
+          "field": "height",
+          "type": "int",
+          "unit": "px"
+        },
+        {
+          "field": "quality",
+          "type": "string",
+          "unit": "enum"
+        },
+        {
+          "field": "include_audio",
+          "type": "bool",
+          "unit": "none"
+        }
+      ]
+    },
+    "RenderPresetV1": {
+      "applies_to_key": "preset",
+      "fields": [
+        {
+          "field": "container",
+          "type": "string",
+          "unit": "enum"
+        },
+        {
+          "field": "video_codec",
+          "type": "string",
+          "unit": "enum",
+          "nullable": true
+        },
+        {
+          "field": "audio_codec",
+          "type": "string",
+          "unit": "enum",
+          "nullable": true
+        },
+        {
+          "field": "width",
+          "type": "int",
+          "unit": "px",
+          "nullable": true
+        },
+        {
+          "field": "height",
+          "type": "int",
+          "unit": "px",
+          "nullable": true
+        },
+        {
+          "field": "fps_num",
+          "type": "int",
+          "unit": "ratio",
+          "nullable": true
+        },
+        {
+          "field": "fps_den",
+          "type": "int",
+          "unit": "ratio",
+          "nullable": true
+        },
+        {
+          "field": "video_bitrate_kbps",
+          "type": "int",
+          "unit": "kbps",
+          "nullable": true
+        },
+        {
+          "field": "crf",
+          "type": "int",
+          "unit": "none",
+          "nullable": true
+        },
+        {
+          "field": "audio_bitrate_kbps",
+          "type": "int",
+          "unit": "kbps",
+          "nullable": true
+        },
+        {
+          "field": "faststart",
+          "type": "bool",
+          "unit": "none"
+        },
+        {
+          "field": "loudness_target_lufs",
+          "type": "int",
+          "unit": "lufs",
+          "nullable": true
+        }
+      ]
+    },
+    "ProbeStreamV1": {
+      "applies_to_key": "streams",
+      "fields": [
+        {
+          "field": "index",
+          "type": "int",
+          "unit": "index"
+        },
+        {
+          "field": "media_type",
+          "type": "string",
+          "unit": "enum"
+        },
+        {
+          "field": "codec",
+          "type": "string",
+          "unit": "enum"
+        },
+        {
+          "field": "width",
+          "type": "int",
+          "unit": "px",
+          "nullable": true
+        },
+        {
+          "field": "height",
+          "type": "int",
+          "unit": "px",
+          "nullable": true
+        },
+        {
+          "field": "fps_num",
+          "type": "int",
+          "unit": "ratio",
+          "nullable": true
+        },
+        {
+          "field": "fps_den",
+          "type": "int",
+          "unit": "ratio",
+          "nullable": true
+        },
+        {
+          "field": "sample_rate",
+          "type": "int",
+          "unit": "hz",
+          "nullable": true
+        },
+        {
+          "field": "channels",
+          "type": "int",
+          "unit": "count",
+          "nullable": true
+        },
+        {
+          "field": "bit_depth",
+          "type": "int",
+          "unit": "bit",
+          "nullable": true
+        },
+        {
+          "field": "rotation",
+          "type": "int",
+          "unit": "count"
+        },
+        {
+          "field": "start_ticks",
+          "type": "int",
+          "unit": "ticks"
+        },
+        {
+          "field": "duration_ticks",
+          "type": "int",
+          "unit": "ticks"
+        },
+        {
+          "field": "language",
+          "type": "string",
+          "unit": "none",
+          "nullable": true
+        }
+      ]
+    }
+  }
+}
