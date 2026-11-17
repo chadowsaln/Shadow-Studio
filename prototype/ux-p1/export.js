@@ -366,7 +366,10 @@
       '<div class="summary__row"><dt>الصوت</dt><dd dir="ltr">' + (preset.a === 0 ? "—" : "AAC · " + adv.audioBitrate + " kbps") + "</dd></div>" +
       '<div class="summary__row"><dt>التطبيع</dt><dd dir="ltr">' + adv.loudness + " LUFS</dd></div>" +
       '<div class="summary__row"><dt>الحجم التقديري</dt><dd dir="ltr">~' + storageEstimate(estimateMb()) + "</dd></div>" +
-      (stale ? '<div class="summary__rule"></div><div class="summary__row"><dt style="color:var(--warning)">تعديلاتك الجديدة لن تُضمَّن</dt><dd><button class="btn btn--ghost" id="btn-export-newer">تصدير نسخة محدثة</button></dd></div>' : "");
+      (stale
+        ? '<div class="summary__warn"><span>تعديلاتك الجديدة لن تُضمَّن في هذا التصدير</span>' +
+          '<button class="btn btn--ghost" id="btn-export-newer">تصدير نسخة محدثة</button></div>'
+        : "");
 
     const items = preflight();
     $("preflight-list").innerHTML = items
@@ -426,7 +429,9 @@
     const remaining = Math.max(1, Math.round((100 - job.progress) / rate));
     const lo = Math.max(1, Math.round(remaining * 0.8));
     const hi = Math.max(lo + 1, Math.round(remaining * 1.3));
-    return "~" + Math.floor(lo / 60) + "–" + Math.ceil(hi / 60) + " د";
+    /* A range, never a single number (UX-6); seconds while the tail is short. */
+    if (hi < 90) return "~" + lo + "–" + hi + " ث";
+    return "~" + Math.max(1, Math.floor(lo / 60)) + "–" + Math.ceil(hi / 60) + " د";
   }
 
   function renderRun() {
@@ -924,6 +929,7 @@
     SS.bindBin();
     SS.bindImport();
     SS.bindTimeline();
+    SS.bindLayout(); /* before bindKeys: Escape dismisses a drawer first */
     SS.bindKeys();
     SS.bindInspector();
     SS.bindExport();

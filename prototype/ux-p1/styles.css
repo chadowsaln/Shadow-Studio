@@ -1122,11 +1122,42 @@ ul { padding: 0; list-style: none; }
 .harness__note { margin-top: 6px; font-size: 9.5px; color: var(--text-muted); line-height: 1.5; }
 
 /* ============================== responsive ============================== */
-@media (max-width: 1280px) {
-  .shell { grid-template-columns: 220px minmax(0, 1fr) 280px; }
+/* Spec §3.1: min window 1024x640. Under 1280px the media bin folds away
+   (drawer from the inline-start edge); under 1100px the inspector becomes
+   a drawer over the content. The shell is RTL, so the bin sits at the
+   inline-start (right) edge and the inspector at the inline-end (left). */
+.topbar__toggle { display: none; }
+.drawer-scrim {
+  position: fixed;
+  inset: 48px 0 28px;
+  z-index: 35;
+  background: rgba(4, 5, 7, 0.46);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
 }
+
+@media (max-width: 1280px) {
+  .shell { grid-template-columns: minmax(0, 1fr) 300px; }
+  #btn-bin { display: inline-flex; }
+  .panel--left {
+    position: fixed;
+    inset-block: 48px 28px;
+    inset-inline-start: 0;
+    width: 280px;
+    z-index: 40;
+    box-shadow: var(--shadow-panel);
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 160ms ease, visibility 160ms ease;
+  }
+  body.is-bin-open .panel--left { transform: none; visibility: visible; }
+  body.is-bin-open .drawer-scrim { opacity: 1; pointer-events: auto; }
+}
+
 @media (max-width: 1100px) {
-  .shell { grid-template-columns: 220px minmax(0, 1fr); }
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  #btn-insp { display: inline-flex; }
   .panel--right {
     position: fixed;
     inset-block: 48px 28px;
@@ -1134,8 +1165,14 @@ ul { padding: 0; list-style: none; }
     width: 300px;
     border-inline-start: 1px solid var(--border);
     box-shadow: var(--shadow-panel);
-    z-index: 30;
+    z-index: 40;
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform 160ms ease, visibility 160ms ease;
   }
+  body.is-insp-open .panel--right { transform: none; visibility: visible; }
+  body.is-insp-open .drawer-scrim { opacity: 1; pointer-events: auto; }
+  .drawer-scrim { inset: 48px 0 28px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1205,3 +1242,16 @@ ul { padding: 0; list-style: none; }
 .export__run #btn-cancel-export { justify-self: start; }
 #progress-frames { direction: ltr; unicode-bidi: isolate; text-align: start; }
 .queue-row { direction: rtl; }
+.summary__warn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  font-size: 10.5px;
+  color: var(--text-primary);
+}
