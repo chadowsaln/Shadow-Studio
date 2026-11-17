@@ -84,7 +84,7 @@ All commands were executed on the working tree at `14c64b3` (plus uncommitted ch
 
 ### 3.2 Non-workspace packages (path deps only)
 
-`packages/agent_runtime`, `context_engine`, `contracts`, `permissions`, `provider_gateway`, `tool_system` are **not** members of the root workspace (`workspace:` list contains only `editing_core`, `local_storage`, `media_core`, `desktop`). They resolve via `path:` dependencies but are outside workspace resolution.
+`packages/agent_runtime`, `context_engine`, `contracts`, `permissions`, `provider_gateway`, `tool_system` are **members of the root workspace** and resolve through the shared lockfile. `permissions` was added alongside the desktop AI integration so its dev dependencies are analyzed in the same resolution as its consumers.
 
 ### 3.3 Auxiliary assets
 

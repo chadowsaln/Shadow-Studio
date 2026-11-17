@@ -187,7 +187,7 @@ Spec V2-D4 requires a reproducible `context_hash`; two definitions make cross-ch
 
 ### D-15 — Non-workspace packages — **Medium** (S)
 
-`agent_runtime`, `context_engine`, `contracts`, `permissions`, `provider_gateway`, `tool_system` are **not** in the root `workspace:` list, yet are consumed via `path:`.
+`agent_runtime`, `context_engine`, `contracts`, `permissions`, `provider_gateway`, `tool_system` are now members of the root `workspace:` list. `permissions` keeps its existing `path:` consumers and publishes through the shared root lockfile.
 
 **Impact:** Inconsistent resolution, duplicated lockfiles, `dart pub get` behaviour differs per package, CI coverage gaps.
 
