@@ -26,7 +26,7 @@ class ProviderGatewayException implements Exception {
 }
 
 class ProviderTimeoutException extends ProviderGatewayException {
-  const ProviderTimeoutException({String? providerId, Duration? timeout})
+  ProviderTimeoutException({String? providerId, Duration? timeout})
       : super(
           code: ShadowErrorCode.providerRateLimit,
           message: 'Provider request timed out',
@@ -37,7 +37,7 @@ class ProviderTimeoutException extends ProviderGatewayException {
 }
 
 class ProviderCancelledException extends ProviderGatewayException {
-  const ProviderCancelledException({String? providerId, String? reason})
+  ProviderCancelledException({String? providerId, String? reason})
       : super(
           code: ShadowErrorCode.agentCancelled,
           message: 'Provider request cancelled',
@@ -48,7 +48,7 @@ class ProviderCancelledException extends ProviderGatewayException {
 }
 
 class BudgetExceededException extends ProviderGatewayException {
-  const BudgetExceededException({required String message, Map<String, Object?> details = const {}})
+  BudgetExceededException({required String message, Map<String, Object?> details = const <String, Object?>{}})
       : super(
           code: ShadowErrorCode.providerBudgetExceeded,
           message: message,
@@ -58,7 +58,7 @@ class BudgetExceededException extends ProviderGatewayException {
 }
 
 class EgressConsentRequiredException extends ProviderGatewayException {
-  const EgressConsentRequiredException({required this.resourceRefs, this.purpose})
+  EgressConsentRequiredException({required this.resourceRefs, this.purpose})
       : super(
           code: ShadowErrorCode.permApprovalRequired,
           message: 'Explicit user consent required before sending media/file content to cloud AI provider',
