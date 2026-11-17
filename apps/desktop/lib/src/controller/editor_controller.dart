@@ -120,7 +120,8 @@ class EditorController extends ChangeNotifier {
     const intervalMs = 33;
     const ticksPerStep = 33333; // 33.3 ms in ticks
 
-    _playbackTimer = Timer.periodic(const Duration(milliseconds: intervalMs), (_) {
+    _playbackTimer =
+        Timer.periodic(const Duration(milliseconds: intervalMs), (_) {
       if (_playheadTicks >= totalDurationTicks) {
         pause();
         _playheadTicks = 0;
@@ -228,9 +229,11 @@ class EditorController extends ChangeNotifier {
         description: 'Add ${targetKind.name} track',
         commands: [addTrack],
       );
-      final trackRes = await editingService.apply(trackTx, expectedRevision: revision);
+      final trackRes =
+          await editingService.apply(trackTx, expectedRevision: revision);
       if (trackRes.isFailure) return false;
-      targetTrack = editingService.currentDocument.tracks.firstWhere((t) => t.id == trackId);
+      targetTrack = editingService.currentDocument.tracks
+          .firstWhere((t) => t.id == trackId);
     }
 
     // Add asset to document assets if not registered
@@ -300,7 +303,8 @@ class EditorController extends ChangeNotifier {
     final track = document.tracks.firstWhere((t) => t.id == trackId);
     final clip = track.clips.firstWhere((c) => c.id == clipId);
 
-    if (_playheadTicks <= clip.timelineStartTicks || _playheadTicks >= clip.timelineEndTicks) {
+    if (_playheadTicks <= clip.timelineStartTicks ||
+        _playheadTicks >= clip.timelineEndTicks) {
       return false; // playhead outside clip bounds
     }
 
@@ -377,6 +381,34 @@ class EditorController extends ChangeNotifier {
 
     final result = await editingService.apply(tx, expectedRevision: revision);
     return result.isSuccess;
+  }
+
+  /// Refreshes UI state after a non-UI caller (the AI agent) changed the
+  /// document through [EditingService]. Clears a selection that no longer
+  /// exists and stops playback so the timeline does not advance over stale
+  /// frame data.
+  void refreshAfterExternalEdit() {
+    if (_isPlaying) {
+      _isPlaying = false;
+      _playbackTimer?.cancel();
+      _playbackTimer = null;
+    }
+    final clipId = _selectedClipId;
+    if (clipId != null) {
+      var found = false;
+      for (final track in document.tracks) {
+        if (track.clips.any((clip) => clip.id == clipId)) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        _selectedClipId = null;
+        _selectedTrackId = null;
+      }
+    }
+    _statusMessage = 'Project updated by AI';
+    notifyListeners();
   }
 
   /// Saves the current project state atomically to disk.

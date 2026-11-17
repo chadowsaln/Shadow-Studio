@@ -1,6 +1,6 @@
 # Shadow Studio — Permission Engine & Local Security Boundaries
 
-**Status:** Implemented in `packages/permissions` (engine) and wired into `packages/tool_system` (executor). Approval *UI* and desktop shell wiring remain separate work items.
+**Status:** Implemented in `packages/permissions` (engine), wired into `packages/tool_system` (executor), and surfaced in `apps/desktop` through the AI panel approval card. AI edits use the same engine-issued single-use tokens as any other restricted tool.
 **Scope:** every capability an autonomous agent can request: filesystem access, timeline edits, exports, AI data egress, external commands, API-key storage, audit.
 **Principle:** the model is untrusted. Nothing in a model response can widen a permission, mint an approval, or change a policy.
 
@@ -15,9 +15,9 @@
 | Process boundary | allowlisted media binaries (`ffmpeg`, `ffprobe`, `mediainfo`) with argv lists | shell strings, metacharacters, arbitrary executables, foreign cwd |
 | Secret boundary | encrypted secret store, OS keyring (future) | logs, audit records, project files, provider errors |
 | Audit boundary | append-only hash-chained log | anything derived from raw argument values |
-| UI boundary | approval dialog (not yet wired) | **never** the enforcement point; checks live in the engine |
+| UI boundary | AI panel approval card (`AiPanel`) | **never** the enforcement point; checks live in the engine |
 
-Every tool call passes through `ToolExecutor` → `PermissionService.authorizeToolCall` → `PermissionPolicy` before `AgentTool.execute` runs. Approval UI is a display layer only; bypassing it cannot bypass the engine.
+Every tool call passes through `ToolExecutor` → `PermissionService.authorizeToolCall` → `PermissionPolicy` before `AgentTool.execute` runs. The desktop approval card is a display layer only; bypassing it cannot bypass the engine.
 
 ---
 

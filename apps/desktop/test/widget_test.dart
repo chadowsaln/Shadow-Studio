@@ -1,13 +1,15 @@
 import 'dart:io';
 
 import 'package:desktop/src/app.dart';
+import 'package:desktop/src/ui/shell/right_dock.dart';
 import 'package:editing_core/editing_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_core/media_core.dart';
 
 void main() {
-  testWidgets('ShadowStudioApp boots full desktop layout cleanly', (WidgetTester tester) async {
+  testWidgets('ShadowStudioApp boots full desktop layout cleanly',
+      (WidgetTester tester) async {
     // Set a desktop viewport size (1440x900)
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1.0;
@@ -24,9 +26,21 @@ void main() {
       profile: ProjectProfile.hd1080p(),
       timebase: Timebase.ntsc2997(),
       tracks: [
-        Track(id: 'track_v1', kind: TrackKind.video, position: 0, name: 'V1 (Video)'),
-        Track(id: 'track_a1', kind: TrackKind.audio, position: 1, name: 'A1 (Audio)'),
-        Track(id: 'track_t1', kind: TrackKind.overlay, position: 2, name: 'T1 (Titles)'),
+        Track(
+            id: 'track_v1',
+            kind: TrackKind.video,
+            position: 0,
+            name: 'V1 (Video)'),
+        Track(
+            id: 'track_a1',
+            kind: TrackKind.audio,
+            position: 1,
+            name: 'A1 (Audio)'),
+        Track(
+            id: 'track_t1',
+            kind: TrackKind.overlay,
+            position: 2,
+            name: 'T1 (Titles)'),
       ],
       assets: const {},
     );
@@ -47,7 +61,8 @@ void main() {
 
     // 2. Verify StatusBar
     expect(find.text('Ready'), findsOneWidget);
-    expect(find.textContaining('Rev 0'), findsNWidgets(2)); // StatusBar & InspectorPanel
+    expect(find.textContaining('Rev 0'),
+        findsNWidgets(2)); // StatusBar & InspectorPanel
 
     // 3. Verify Media Bin
     expect(find.textContaining('Media Bin'), findsOneWidget);
@@ -62,7 +77,18 @@ void main() {
     expect(find.text('Project Settings'), findsOneWidget);
     expect(find.text('1920 x 1080'), findsOneWidget);
 
-    // 6. Test Export Dialog modal trigger
+    // 6. AI tab is reachable from the right dock
+    expect(find.text('Inspector'), findsOneWidget);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(RightDock),
+        matching: find.text('AI'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('AI Agent'), findsOneWidget);
+
+    // 7. Test Export Dialog modal trigger
     await tester.tap(find.text('Export'));
     await tester.pumpAndSettle();
 

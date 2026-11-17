@@ -12,20 +12,25 @@ class TopBar extends StatelessWidget {
   final EditorController controller;
   final VoidCallback onExportPressed;
   final VoidCallback onThemeToggle;
+  final VoidCallback onAiPressed;
   final bool isDarkMode;
+  final bool isAiActive;
 
   const TopBar({
     super.key,
     required this.controller,
     required this.onExportPressed,
     required this.onThemeToggle,
+    required this.onAiPressed,
     required this.isDarkMode,
+    required this.isAiActive,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = ShadowColors.of(context);
-    final projectName = controller.currentProjectPath?.split('/').last ?? 'Untitled.ssproj';
+    final projectName =
+        controller.currentProjectPath?.split('/').last ?? 'Untitled.ssproj';
 
     return Container(
       height: 48,
@@ -41,7 +46,8 @@ class TopBar extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             'Shadow Studio',
-            style: ShadowTypography.title.copyWith(color: colors.textPrimary, fontSize: 14),
+            style: ShadowTypography.title
+                .copyWith(color: colors.textPrimary, fontSize: 14),
           ),
           const SizedBox(width: 16),
           Container(width: 1, height: 18, color: colors.border),
@@ -52,7 +58,8 @@ class TopBar extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             projectName,
-            style: ShadowTypography.body.copyWith(color: colors.textSecondary, fontWeight: FontWeight.w500),
+            style: ShadowTypography.body.copyWith(
+                color: colors.textSecondary, fontWeight: FontWeight.w500),
           ),
           const SizedBox(width: 16),
 
@@ -69,14 +76,18 @@ class TopBar extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(
-                    controller.isSaving ? Icons.sync : Icons.check_circle_outline,
+                    controller.isSaving
+                        ? Icons.sync
+                        : Icons.check_circle_outline,
                     size: 14,
-                    color: controller.isSaving ? colors.warning : colors.success,
+                    color:
+                        controller.isSaving ? colors.warning : colors.success,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     controller.isSaving ? 'Saving...' : 'Saved ✓',
-                    style: ShadowTypography.caption.copyWith(color: colors.textPrimary),
+                    style: ShadowTypography.caption
+                        .copyWith(color: colors.textPrimary),
                   ),
                 ],
               ),
@@ -101,13 +112,39 @@ class TopBar extends StatelessWidget {
 
           const SizedBox(width: 12),
           Container(width: 1, height: 18, color: colors.border),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
+
+          // AI Agent dock toggle
+          TextButton.icon(
+            onPressed: onAiPressed,
+            icon: Icon(Icons.auto_awesome,
+                size: 16,
+                color: isAiActive ? colors.accent : colors.textSecondary),
+            label: Text(
+              'AI',
+              style: ShadowTypography.caption.copyWith(
+                color: isAiActive ? colors.accent : colors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              backgroundColor:
+                  isAiActive ? colors.accent.withValues(alpha: 0.12) : null,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+
+          const SizedBox(width: 8),
 
           // Theme Switch
           IconButton(
-            icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode, size: 18),
+            icon:
+                Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode, size: 18),
             color: colors.textSecondary,
-            tooltip: isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+            tooltip:
+                isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',
             onPressed: onThemeToggle,
           ),
 
@@ -122,7 +159,8 @@ class TopBar extends StatelessWidget {
               backgroundColor: colors.accent,
               foregroundColor: colors.onAccent,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              textStyle: ShadowTypography.body.copyWith(fontWeight: FontWeight.w600),
+              textStyle:
+                  ShadowTypography.body.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
         ],

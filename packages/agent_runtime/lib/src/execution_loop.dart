@@ -371,6 +371,15 @@ class ExecutionLoop {
               );
 
               toolCallCount++;
+              // A successful edit advances the project revision. Carry it into
+              // the task context so the next tool call is checked against the
+              // current document instead of a stale snapshot.
+              if (result.success) {
+                final newRevision = result.data['revision'];
+                if (newRevision is int && newRevision >= 0) {
+                  context.updateProjectRevision(newRevision);
+                }
+              }
               recentObservations.add(result);
               history.add(
                 AIMessage(

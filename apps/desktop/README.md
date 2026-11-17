@@ -15,11 +15,14 @@ Per the Software Architecture Specification v2.0 (`docs/architecture/SOFTWARE-AR
 - **Media Ingestion & Invariant Validation**: Integrated with `packages/media_core` for probing, BLAKE3 deduplication, thumbnail generation, and proxy playback.
 - **Pre-Flight Render Validation**: Live sequence profile inspection and pre-flight validation against `rendergraph.schema.json` via `EditingService.resolveGraph`.
 
-### AI Agent Boundary
-The application maintains strict decoupling from the AI agent subsystem (`agent_runtime`, `provider_gateway`, `tool_system`, `permissions`):
-- `apps/desktop` does not import or execute agent logic directly.
-- The UI binds to `EditorController`, which exposes pure Dart interfaces on top of `EditingService` (`packages/editing_core`) and `MediaLibraryService` (`packages/media_core`).
-- When the AI agent applies automated edits, it submits an atomic `EditTransaction` to `EditingService.apply(..., expectedRevision: rev)`. The UI controller observes document revision updates and triggers smooth reactive re-renders without full reload.
+### AI Agent Integration
+The desktop app now hosts the AI agent as a UI surface while keeping the editing core authoritative:
+- `AgentSessionController` (`lib/src/agent`) owns the real `AgentController`, `ToolExecutor`, `PermissionManager`, and approval gate. The AI tab renders only typed runtime events (plan, progress, tool activity, approvals, results) — never chain-of-thought or credentials.
+- Provider, model, and base URL are selected in the app and persisted in `agent.json`; the API key is written only to the encrypted `SecureFileCredentialStore`. Environment variables are a first-run fallback only.
+- Tools are `list_files`, `media_probe`, `media_analysis`, and `timeline_edit`. Every tool call still passes schema validation, workspace path confinement, permission policy, and audit. `timeline_edit` is `restricted` and therefore pauses on an explicit approval card.
+- AI edits submit one atomic `EditTransaction` through the editing core. On success the runtime advances the task revision, and the desktop calls `EditorController.refreshAfterExternalEdit()` so the timeline re-renders without a full reload.
+- AI data egress requires a per-session checkbox before a task can start. No provider request is made on app launch.
+- `Ctrl+Shift+A` opens the AI tab. A task can be cancelled; pending approvals are revoked on stop or failure.
 
 ---
 
@@ -31,6 +34,10 @@ apps/desktop/
 │   ├── main.dart                      # Desktop application entrypoint
 │   └── src/
 │       ├── app.dart                   # Root ShadowStudioApp widget
+│       ├── agent/
+│       │   ├── agent_settings.dart    # Provider descriptors, agent.json, encrypted key store
+│       │   ├── agent_session_controller.dart # Agent runtime/UI bridge, approvals, activity
+│       │   └── desktop_tool_executor.dart    # ToolExecutor → ToolCallExecutor adapter
 │       ├── controller/
 │       │   └── editor_controller.dart # Unified ChangeNotifier coordinating editing state & tools
 │       ├── theme/
@@ -59,6 +66,9 @@ apps/desktop/
 │           │   ├── playhead_widget.dart  # Draggable playhead line and time indicator
 │           │   ├── track_lane.dart       # Track lane containing arranged clips
 │           │   └── timeline_panel.dart   # Complete horizontal scrolling timeline
+│           ├── ai/
+│           │   ├── ai_panel.dart            # Task input, consent, plan, approvals, activity
+│           │   └── agent_settings_dialog.dart # Provider/model/API-key configuration
 │           ├── inspector/
 │           │   ├── transform_inspector.dart # Position, scale, rotation, and opacity inputs
 │           │   ├── text_inspector.dart      # Arabic & English text overlay properties

@@ -9,6 +9,7 @@ workspace:
   - packages/contracts
   - packages/context_engine
   - packages/tool_system
+  - packages/permissions
   - packages/agent_runtime
   - packages/provider_gateway
   - packages/render_pipeline

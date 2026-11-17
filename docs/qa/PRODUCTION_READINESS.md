@@ -11,7 +11,7 @@
 
 **Not production ready.**
 
-The **engine-level foundation is credible and now has a real video/audio export path**. The **desktop product is still a prototype**: preview is a mock, the Export dialog simulates progress without encoding, the app does not depend on the AI stack, there is no AI/approval UI, and Arabic localization is not implemented.
+The **engine-level foundation is credible and now has a real video/audio export path**. The **desktop product is still a prototype**: preview is a mock, the Export dialog simulates progress without encoding, and Arabic localization is not implemented. The **AI product path is now wired** (provider settings, encrypted key, consent, plan, approvals, cancellation, real editing tools), but only with a scripted brain in tests; no live provider call was executed.
 
 This verification also found and fixed **two real export defects** that made any production render fail or produce a malformed command:
 
@@ -30,7 +30,7 @@ Both are fixed and covered by real FFmpeg tests.
 
 | Desktop/product capability (not only engine) | Status |
 | --- | --- |
-| AI request → plan → real tools → MP4 through the desktop UI | **FAIL** |
+| AI request → plan → real tools through the desktop UI | **PARTIAL** (scripted brain; live provider unverified) |
 | Real preview of decoded frames | **FAIL** |
 | Arabic UI localization | **FAIL** |
 
@@ -58,11 +58,11 @@ The full gate covered formatting, dependency resolution, documentation contracts
 
 | # | Area | Status | Executed evidence | What is still missing |
 | --- | --- | --- | --- | --- |
-| 1 | Agent planning and execution | **PASS (headless)** | `agent_runtime` 61/61; state-machine, budgets/loops/retries, provider brain, multi-agent, and the acceptance scenario | No real LLM call; acceptance uses a scripted `MockProvider`. No AI surface in the desktop app. |
+| 1 | Agent planning and execution | **PASS (headless) / PARTIAL (desktop)** | `agent_runtime` 61/61; state-machine, budgets/loops/retries, provider brain, multi-agent, and the acceptance scenario. Desktop tests run the real runtime, tools, and permissions through a scripted brain. | No real LLM call; acceptance and desktop tests use a scripted brain/provider. |
 | 2 | Tool registration and invocation | **PASS (implemented tools)** | `tool_system` 28/28; registry validation, real `media_analysis` and `timeline_edit` calls in acceptance | Spec lists 27 v1 tools; implementation exposes 10 MVP built-ins plus media/timeline tools. Full 27-tool coverage is not met. |
 | 3 | Provider switching | **PARTIAL** | `provider_gateway` 24/24; model selection, capability downgrade, fallback on retryable errors, no fallback on 401/403, streamed tool calls | No live OpenAI/Anthropic/Gemini/OpenRouter request was executed (no credentials). Local HTTP/SSE server and retry transport were exercised. |
 | 4 | API failures and retries | **PARTIAL** | Real local HTTP tests: SSE decode, 401 mapping, 503 mapping, retry-until-success, no replay after partial stream, no retry on auth | No provider-side rate-limit/network test against a live endpoint; no end-to-end retry budget test across a real provider. |
-| 5 | Permission enforcement | **PASS (engine)** | `permissions` 57/57; forged tokens, expiry, revocation, replay, risk downscoping, unknown tools, shell blocking, audit | Approval UI and desktop wiring are absent. |
+| 5 | Permission enforcement | **PASS (engine + desktop)** | `permissions` 57/57; forged tokens, expiry, revocation, replay, risk downscoping, unknown tools, shell blocking, audit. Desktop test approves/rejects a restricted `timeline_edit` through the real engine. | No OS sandbox; approval card is not exercised on a live provider session. |
 | 6 | Filesystem security | **PASS (engine)** | `permissions` plus `tool_system/security_integration_test.dart`: traversal, symlink escape, absolute paths, `assetPath` smuggling, control chars, canonicalization | TOCTOU is not eliminated; there is no OS sandbox. |
 | 7 | Checkpoint creation | **PASS** | `agent_runtime` checkpoint tests and `local_storage` 30/30; schema v3, history, latest-per-task, corrupt-row fail-closed | No retention/compaction policy. |
 | 8 | Recovery after crashes | **PASS (engine)** | 18 crash/restart tests, process-restart SQLite test, interrupted detection, safe resume, non-idempotent replay guard, cancellation checkpoint | Recovery is manual and has no desktop UI; no automatic startup detection. |
@@ -177,10 +177,10 @@ There is **no preview latency/scrub benchmark** because no real preview pipeline
 
 1. **Desktop export is fake.** [export_dialog.dart](../../apps/desktop/lib/src/ui/export/export_dialog.dart) runs a `Timer.periodic` progress bar and writes no file. Wire `render_pipeline` into the dialog and add cancel/progress/failure handling.
 2. **Preview is fake.** [preview_canvas.dart](../../apps/desktop/lib/src/ui/preview/preview_canvas.dart) draws an icon, label, and timecode. Implement frame decode and frame-accurate seek before claiming preview readiness.
-3. **AI product path is absent.** [pubspec.yaml](../../apps/desktop/pubspec.yaml) depends only on `editing_core`, `local_storage`, and `media_core`. No agent, provider, tool, permission, or context package is reachable from the app; there is no chat/plan/approval UI.
+3. **AI product path is wired but not live-verified.** [pubspec.yaml](../../apps/desktop/pubspec.yaml) now depends on the agent, provider, tool, permission, and contracts packages, and the AI panel exposes settings, consent, plan, approvals, activity, and cancellation. Remaining gap: no live provider request was executed without credentials.
 4. **Arabic localization is absent.** No locale configuration, no localization resources, only three Arabic strings. The app shell is not an Arabic-first RTL product.
 5. **Packaging is build-only.** Linux release builds, but no installer, launch smoke test, Windows build, or signing exists.
-6. **Real provider call is unverified.** Transport and routing are tested locally, but no live provider request/tool loop was executed.
+6. **Real provider call is unverified.** Transport and routing are tested locally, and the desktop controller is tested with a scripted brain, but no live provider request/tool loop was executed. The desktop path also rejects media files outside the project workspace by design.
 
 ---
 

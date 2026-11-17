@@ -1,25 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../agent/agent_session_controller.dart';
 import '../../controller/editor_controller.dart';
 import '../../theme/shadow_colors.dart';
 import '../export/export_dialog.dart';
-import '../inspector/inspector_panel.dart';
 import '../media/media_bin_panel.dart';
 import '../preview/preview_panel.dart';
 import '../timeline/timeline_panel.dart';
+import 'right_dock.dart';
 import 'status_bar.dart';
 import 'top_bar.dart';
 
 /// Root App Shell implementing responsive multi-panel desktop layout and global keyboard shortcuts.
 class AppShell extends StatefulWidget {
   final EditorController controller;
+  final AgentSessionController agentSession;
   final VoidCallback onThemeToggle;
   final bool isDarkMode;
 
   const AppShell({
     super.key,
     required this.controller,
+    required this.agentSession,
     required this.onThemeToggle,
     required this.isDarkMode,
   });
@@ -30,6 +33,12 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   final FocusNode _keyboardFocusNode = FocusNode();
+  int _rightDockIndex = 0;
+
+  void _setRightDock(int index) {
+    if (_rightDockIndex == index) return;
+    setState(() => _rightDockIndex = index);
+  }
 
   @override
   void dispose() {
@@ -62,7 +71,8 @@ class _AppShellState extends State<AppShell> {
       widget.controller.setToolMode(ToolMode.razor);
       return KeyEventResult.handled;
     }
-    if (event.logicalKey == LogicalKeyboardKey.delete || event.logicalKey == LogicalKeyboardKey.backspace) {
+    if (event.logicalKey == LogicalKeyboardKey.delete ||
+        event.logicalKey == LogicalKeyboardKey.backspace) {
       widget.controller.deleteSelectedClip();
       return KeyEventResult.handled;
     }
@@ -86,11 +96,19 @@ class _AppShellState extends State<AppShell> {
       _showExportDialog();
       return KeyEventResult.handled;
     }
-    if (isCtrl && (event.logicalKey == LogicalKeyboardKey.equal || event.logicalKey == LogicalKeyboardKey.numpadAdd)) {
+    if (isCtrl && isShift && event.logicalKey == LogicalKeyboardKey.keyA) {
+      _setRightDock(1);
+      return KeyEventResult.handled;
+    }
+    if (isCtrl &&
+        (event.logicalKey == LogicalKeyboardKey.equal ||
+            event.logicalKey == LogicalKeyboardKey.numpadAdd)) {
       widget.controller.zoomIn();
       return KeyEventResult.handled;
     }
-    if (isCtrl && (event.logicalKey == LogicalKeyboardKey.minus || event.logicalKey == LogicalKeyboardKey.numpadSubtract)) {
+    if (isCtrl &&
+        (event.logicalKey == LogicalKeyboardKey.minus ||
+            event.logicalKey == LogicalKeyboardKey.numpadSubtract)) {
       widget.controller.zoomOut();
       return KeyEventResult.handled;
     }
@@ -123,7 +141,7 @@ class _AppShellState extends State<AppShell> {
       autofocus: true,
       onKeyEvent: _handleKeyEvent,
       child: ListenableBuilder(
-        listenable: widget.controller,
+        listenable: Listenable.merge([widget.controller, widget.agentSession]),
         builder: (context, _) {
           return Scaffold(
             backgroundColor: colors.surface0,
@@ -135,6 +153,8 @@ class _AppShellState extends State<AppShell> {
                   onExportPressed: _showExportDialog,
                   onThemeToggle: widget.onThemeToggle,
                   isDarkMode: widget.isDarkMode,
+                  onAiPressed: () => _setRightDock(1),
+                  isAiActive: _rightDockIndex == 1,
                 ),
 
                 // 2. Middle Workspace Layout
@@ -155,31 +175,41 @@ class _AppShellState extends State<AppShell> {
                             // Preview Panel (55% height)
                             Expanded(
                               flex: 55,
-                              child: PreviewPanel(controller: widget.controller),
+                              child:
+                                  PreviewPanel(controller: widget.controller),
                             ),
                             Container(height: 1, color: colors.border),
 
                             // Timeline Panel (45% height)
                             Expanded(
                               flex: 45,
-                              child: TimelinePanel(controller: widget.controller),
+                              child:
+                                  TimelinePanel(controller: widget.controller),
                             ),
                           ],
                         ),
                       ),
                       Container(width: 1, color: colors.border),
 
-                      // Right: Inspector Panel (280px)
+                      // Right: Inspector / AI dock (300px)
                       SizedBox(
-                        width: 280,
-                        child: InspectorPanel(controller: widget.controller),
+                        width: 300,
+                        child: RightDock(
+                          controller: widget.controller,
+                          session: widget.agentSession,
+                          index: _rightDockIndex,
+                          onTabChanged: _setRightDock,
+                        ),
                       ),
                     ],
                   ),
                 ),
 
                 // 3. Status Bar (28px)
-                StatusBar(controller: widget.controller),
+                StatusBar(
+                  controller: widget.controller,
+                  agentSession: widget.agentSession,
+                ),
               ],
             ),
           );

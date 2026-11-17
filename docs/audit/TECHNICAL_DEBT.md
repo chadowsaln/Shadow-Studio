@@ -187,7 +187,7 @@ Spec V2-D4 requires a reproducible `context_hash`; two definitions make cross-ch
 
 ### D-15 — Non-workspace packages — **Medium** (S)
 
-`agent_runtime`, `context_engine`, `contracts`, `permissions`, `provider_gateway`, `tool_system` are **not** in the root `workspace:` list, yet are consumed via `path:`.
+`agent_runtime`, `context_engine`, `contracts`, `permissions`, `provider_gateway`, `tool_system` are now members of the root `workspace:` list. `permissions` keeps its existing `path:` consumers and publishes through the shared root lockfile.
 
 **Impact:** Inconsistent resolution, duplicated lockfiles, `dart pub get` behaviour differs per package, CI coverage gaps.
 
@@ -207,13 +207,11 @@ Spec V2-D4 requires a reproducible `context_hash`; two definitions make cross-ch
 
 ---
 
-### D-17 — Desktop does not depend on the AI stack — **High** (M)
+### D-17 — Desktop does not depend on the AI stack — **Resolved** (M)
 
-`apps/desktop/pubspec.yaml` lists only `editing_core`, `local_storage`, `media_core`.
+`apps/desktop/pubspec.yaml` now depends on `shadow_agent_runtime`, `shadow_provider_gateway`, `shadow_tool_system`, `shadow_permissions`, and `shadow_contracts`. `AgentSessionController` owns the real runtime and tools, and the AI panel exposes setup, consent, plan, approvals, activity, and cancellation.
 
-**Impact:** The product's headline features (AI, tools, permissions, agent) are unreachable from the app; integration work is invisible to app-level tests.
-
-**Fix:** Add the packages (once stable) and add an app-boundary integration test.
+**Residual gap:** no live provider request was executed without credentials; scripted-brain and local transport paths are covered by tests.
 
 ---
 

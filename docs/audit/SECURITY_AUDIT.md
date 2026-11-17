@@ -78,9 +78,11 @@ if (payloads.isEmpty) return;   // <-- consent skipped
 
 ---
 
-### S-02 — Desktop app bypasses the entire safety stack — **High**
+### S-02 — Desktop app bypasses the entire safety stack — **High** (partially remediated)
 
-**Evidence:** `apps/desktop/pubspec.yaml` dependencies are only `editing_core`, `local_storage`, `media_core`. `app_shell.dart` contains no permission/approval surfaces. `EditorController` calls `EditingService` directly.
+**Update (AI path):** `apps/desktop` now depends on `agent_runtime`, `provider_gateway`, `tool_system`, `permissions`, and `contracts`. `AgentSessionController` routes every AI tool call through `ToolExecutor`/`PermissionManager`, and `AiPanel` shows single-use approval cards for restricted edits. Direct UI actions (delete/trim/undo via `EditorController`) still bypass the permission engine; this finding remains open for those paths.
+
+**Evidence:** At review time `apps/desktop/pubspec.yaml` listed only `editing_core`, `local_storage`, `media_core`; `app_shell.dart` had no permission/approval surfaces; `EditorController` called `EditingService` directly.
 
 **Issue:** All permission checks, approvals, path validation, and audit logging live in packages the app does not depend on. User-initiated destructive operations (delete clip, overwrite project, export over an existing file) have **no approval or audit trail**.
 
