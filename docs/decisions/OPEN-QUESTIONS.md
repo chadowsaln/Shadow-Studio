@@ -131,3 +131,15 @@ Where the architecture specifications are silent, ambiguous, or allow multiple i
   - Codec is H.264 Baseline Profile with `libx264` (`-preset ultrafast -crf 28`) and AAC stereo audio (128 kbps).
   - Proxies are always written with atomic write semantics (`<cacheDir>/proxies/<blake3Hash>.mp4.part` -> fsync -> rename) and explicit format flag (`-f mp4`), preventing corrupted partial files from entering the cache if the application is killed during transcoding.
 
+---
+
+## OQ-012: Arabic Text Shaping and Timeline Bidirectional Protection in Flutter Desktop
+
+- **Context**: Spec §2.4, §2.2, and MVP UI/UX Spec S2 require Arabic RTL text support with bidirectional protection for SMPTE timecodes and numbers.
+- **Question**: How does the Flutter desktop UI handle complex Arabic text layout and prevent numbers from reversing?
+- **Decision / Proposed Default**:
+  - The UI uses Cairo font for all UI text and Arabic typography, with Flutter's built-in text engine (HarfBuzz under the hood) performing correct Arabic cursive joining and ligatures.
+  - All timecode and frame counter displays embed Unicode LTR isolation markers (`\u2066` U+2066 Left-to-Right Isolate ... `\u2069` U+2069 Pop Directional Isolate) using `IBM Plex Mono` tabular figures. This guarantees that `00:01:23:15` is rendered strictly left-to-right even when embedded inside an RTL Arabic paragraph or label.
+  - The Timeline horizontal track time axis is strictly LTR (time always flows left-to-right from 0 to +inf) regardless of application UI locale.
+
+
