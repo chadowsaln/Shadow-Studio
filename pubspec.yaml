@@ -1,0 +1,7 @@
+name: shadow_studio_workspace
+environment:
+  sdk: ^3.6.0
+
+workspace:
+  - packages/editing_core
+  - packages/local_storage
