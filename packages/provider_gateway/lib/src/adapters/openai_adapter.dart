@@ -80,7 +80,7 @@ class OpenAIAdapter implements AIProvider {
     required CancellationToken cancel,
   }) async* {
     final key = await _credentials.requireApiKey(id);
-    final uri = _baseUri.resolve('chat/completions');
+    final uri = resolveProviderEndpoint(_baseUri, 'chat/completions');
     final body = <String, Object?>{
       'model': request.model,
       'messages': openAiMessages(request),

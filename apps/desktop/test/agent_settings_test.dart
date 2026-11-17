@@ -28,6 +28,7 @@ void main() {
     final settings = await store.load();
     expect(settings.providerId, 'anthropic');
     expect(settings.model, 'claude-test');
+    expect(settings.provider.defaultBaseUri, 'https://api.anthropic.com/v1');
     expect(await store.readApiKey('anthropic'), 'env-secret-key');
     expect(await store.readApiKey('openai'), isNull);
   });
