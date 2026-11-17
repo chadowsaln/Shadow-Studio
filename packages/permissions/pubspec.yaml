@@ -1,0 +1,17 @@
+name: shadow_permissions
+description: Shadow Studio permission and security engine (policy, approvals, workspace/path guards, audit, egress consent).
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  meta: ^1.16.0
+  path: ^1.9.0
+  shadow_contracts:
+    path: ../contracts
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0

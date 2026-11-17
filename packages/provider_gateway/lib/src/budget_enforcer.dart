@@ -138,7 +138,7 @@ abstract final class BudgetEnforcer {
     accounting.recordUsage(usage: usage, costUsd: cost);
     // total sanity recorded via parts; no-op
     if (total < 0) {
-      throw const BudgetExceededException(message: 'Invalid token usage reported');
+      throw BudgetExceededException(message: 'Invalid token usage reported');
     }
   }
 }

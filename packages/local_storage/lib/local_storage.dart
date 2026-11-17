@@ -16,3 +16,8 @@ export 'src/model/stored_edit_op.dart';
 export 'src/service/atomic_saver.dart';
 export 'src/service/project_file_storage.dart';
 export 'src/service/project_index_database.dart';
+
+export 'src/local_database.dart';
+export 'src/session_memory_repository.dart';
+export 'src/task_memory_repository.dart';
+export 'src/checkpoint_store.dart';

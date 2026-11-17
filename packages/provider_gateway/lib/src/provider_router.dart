@@ -45,9 +45,9 @@ class ProviderRouter {
   List<AIProvider> get providers => List<AIProvider>.unmodifiable(_providers.values);
 
   Future<List<AIModel>> listModels({String? providerId, required CancellationToken cancel}) async {
-    final targets = providerId != null ? [_providers[providerId]] : _providers.values;
     final out = <AIModel>[];
-    for (final p in targets) {
+    if (providerId != null) {
+      final p = _providers[providerId];
       if (p == null) {
         throw ProviderGatewayException(
           code: ShadowErrorCode.providerUnsupported,
@@ -57,6 +57,10 @@ class ProviderRouter {
         );
       }
       out.addAll(await p.getModels(cancel: cancel));
+    } else {
+      for (final p in _providers.values) {
+        out.addAll(await p.getModels(cancel: cancel));
+      }
     }
     return out;
   }

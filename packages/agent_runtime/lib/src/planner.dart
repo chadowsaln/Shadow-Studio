@@ -47,8 +47,16 @@ class PlanStep {
     );
   }
 
+  static PlanStep fromJson(Map<String, dynamic> json) => PlanStep(
+        id: json['id'] as String,
+        description: json['description'] as String,
+        expectedOutcome: json['expectedOutcome'] as String,
+        status: PlanStepStatus.values.firstWhere((s) => s.name == (json['status'] as String? ?? 'pending'), orElse: () => PlanStepStatus.pending),
+        resultSummary: json['resultSummary'] as String?,
+        error: json['error'] as String?,
+      );
+
   Map<String, Object?> toJson() => <String, Object?>{
-        'id': id,
         'description': description,
         'expectedOutcome': expectedOutcome,
         'status': status.name,
@@ -95,8 +103,13 @@ class AgentPlan {
     );
   }
 
+  static AgentPlan fromJson(Map<String, dynamic> json) => AgentPlan(
+        revision: json['revision'] as int,
+        goal: json['goal'] as String?,
+        steps: (json['steps'] as List).map((e) => PlanStep.fromJson((e as Map).cast<String, dynamic>())).toList(),
+      );
+
   Map<String, Object?> toJson() => <String, Object?>{
-        'revision': revision,
         if (goal != null) 'goal': goal,
         'steps': steps.map((s) => s.toJson()).toList(),
       };
