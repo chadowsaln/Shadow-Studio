@@ -13,10 +13,11 @@ import 'package:shadow_contracts/shadow_contracts.dart';
 /// Local HTTP provider stand-in. Mirrors the fake-server pattern used by
 /// `packages/provider_gateway/test/http_transport_test.dart`.
 class _FakeProviderServer {
-  _FakeProviderServer(this._handler);
+  _FakeProviderServer(this._handler, {this.closeResponse = true});
 
   final FutureOr<void> Function(HttpResponse response, HttpRequest request)
       _handler;
+  final bool closeResponse;
   final List<_CapturedRequest> requests = <_CapturedRequest>[];
   HttpServer? _server;
 
@@ -35,7 +36,7 @@ class _FakeProviderServer {
         _CapturedRequest(uri: request.uri, headers: headers, body: body),
       );
       await _handler(request.response, request);
-      await request.response.close();
+      if (closeResponse) await request.response.close();
     });
   }
 
@@ -132,7 +133,7 @@ void main() {
     if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
   });
 
-  Future<void> configure(Uri baseUri) async {
+  Future<void> configure(Uri baseUri, {Duration? providerTimeout}) async {
     await settingsStore.save(
       AgentSettings(
         providerId: 'openai',
@@ -145,6 +146,7 @@ void main() {
       editor: editor,
       settingsStore: settingsStore,
       workspaceRootOverride: tempDir.path,
+      providerTimeout: providerTimeout ?? const Duration(seconds: 30),
     );
     await session.initialize();
   }
@@ -257,6 +259,33 @@ void main() {
         File('${tempDir.path}/agent.json').readAsStringSync(),
         isNot(contains(apiKey)),
       );
+    },
+  );
+
+  test(
+    'provider timeout surfaces as a failed task instead of a hang',
+    () async {
+      // Accept the request but never send headers, so the transport's own
+      // deadline is what ends the request.
+      final server =
+          _FakeProviderServer((response, _) {}, closeResponse: false);
+      await server.start();
+      addTearDown(server.close);
+      await configure(
+        server.baseUri,
+        providerTimeout: const Duration(milliseconds: 250),
+      );
+      session.setEgressConsent(true);
+
+      final started = DateTime.now();
+      await session.run('Summarize the timeline.');
+      await session.waitForTask().timeout(const Duration(seconds: 15));
+      final elapsed = DateTime.now().difference(started);
+
+      expect(session.status, AgentSessionStatus.failed);
+      expect(session.errorMessage, contains('timed out'));
+      expect(server.requests, isNotEmpty);
+      expect(elapsed, lessThan(const Duration(seconds: 10)));
     },
   );
 
