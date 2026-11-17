@@ -120,7 +120,15 @@ class AgentController {
       StreamController<AgentRuntimeEvent>.broadcast();
   final Map<String, ManagedTask> _tasks = <String, ManagedTask>{};
   final Map<String, CancellationToken> _tokens = <String, CancellationToken>{};
+  final Map<String, Future<void>> _running = <String, Future<void>>{};
+  final Map<String, int> _resumeCounts = <String, int>{};
+  bool _disposed = false;
+  String? _lastPersistenceError;
   int _idSeq = 0;
+
+  /// Last checkpoint write failure, if any. Execution continues (the in-memory
+  /// task is still usable) but the task is no longer crash-recoverable.
+  String? get lastPersistenceError => _lastPersistenceError;
 
   Stream<AgentRuntimeEvent> get events => _events.stream;
   TaskScheduler get scheduler => _scheduler;
@@ -164,18 +172,35 @@ class AgentController {
       workspaceRoot: workspaceRoot,
       projectRevision: projectRevision,
     );
+    // Fire-and-forget: task creation is synchronous, but the queued state must
+    // be durable before the process can crash.
+    unawaited(
+      _persistQuietly(
+        id,
+        state: AgentTaskState.queued,
+        plan: const AgentPlan(steps: <PlanStep>[], revision: 0),
+      ),
+    );
     // kick off if this became active
     _maybeStartActive();
     return managed;
   }
 
   void _maybeStartActive() {
+    if (_disposed) return;
     final active = _scheduler.active;
     if (active == null) return;
     final managed = _tasks[active.id];
     if (managed == null || managed.state != ManagedTaskState.queued) return;
-    // fire and forget; completion handled internally
-    unawaited(_runTask(active.id));
+    // Completion is handled internally; keep the future so dispose() can wait
+    // for terminal checkpoints instead of racing them.
+    final future = _runTask(active.id);
+    _running[active.id] = future;
+    unawaited(
+      future.whenComplete(() {
+        if (identical(_running[active.id], future)) _running.remove(active.id);
+      }),
+    );
   }
 
   Future<void> _runTask(String taskId) async {
@@ -186,6 +211,7 @@ class AgentController {
 
     _contextHolder.snapshot = null;
     _setState(taskId, ManagedTaskState.planning);
+    unawaited(_persistQuietly(taskId, state: AgentTaskState.planning));
     _emit(
       TaskStarted(
         taskId: taskId,
@@ -203,6 +229,10 @@ class AgentController {
       context: managed.context,
       cancel: token,
       audit: _audit,
+      // A restored task continues its validated plan instead of asking the
+      // model to plan from scratch. A task interrupted before any plan existed
+      // passes null so the loop plans normally.
+      resumePlan: (managed.plan?.steps.isEmpty ?? true) ? null : managed.plan,
     );
 
     switch (outcome.state) {
@@ -234,6 +264,14 @@ class AgentController {
         );
     }
 
+    await _persistQuietly(
+      taskId,
+      state: outcome.state,
+      errorCode: outcome.errorCode,
+      errorMessage: outcome.errorMessage,
+      summary: outcome.summary,
+    );
+
     _tokens.remove(taskId);
     _scheduler.completeActive(taskId);
     _maybeStartActive();
@@ -252,7 +290,106 @@ class AgentController {
           reason: reason,
         ),
       );
+      await _persistQuietly(
+        taskId,
+        state: AgentTaskState.cancelled,
+        errorMessage: reason,
+      );
     }
+  }
+
+  /// Non-terminal checkpoints that belong to a dead process or stopped
+  /// heartbeating. The UI uses this to offer manual resume.
+  Future<List<InterruptedTask>> interruptedTasks() =>
+      _recoveryManager.detectInterrupted();
+
+  /// Inspection views (history, blockers, partial outputs) for every
+  /// interrupted task.
+  Future<List<RecoveryInspection>> inspectInterrupted() async {
+    final interrupted = await interruptedTasks();
+    final out = <RecoveryInspection>[];
+    for (final item in interrupted) {
+      out.add(await _recoveryManager.inspect(taskId: item.checkpoint.taskId));
+    }
+    return out;
+  }
+
+  Future<RecoveryInspection> inspectTask(
+    String taskId, {
+    int? currentProjectRevision,
+    String? workspaceRoot,
+    bool allowNonIdempotentReplay = false,
+  }) => _recoveryManager.inspect(
+    taskId: taskId,
+    currentProjectRevision: currentProjectRevision,
+    workspaceRoot: workspaceRoot,
+    allowNonIdempotentReplay: allowNonIdempotentReplay,
+  );
+
+  /// Resumes a task using the request/workspace/revision stored in its
+  /// checkpoint. Validates everything before scheduling the loop again.
+  Future<ManagedTask> resumeTask({
+    required String taskId,
+    String? workspaceRoot,
+    int? currentProjectRevision,
+    String? request,
+    bool allowNonIdempotentReplay = false,
+    bool discardPartialOutputs = false,
+  }) async {
+    final cp = await _recoveryManager.restore(taskId);
+    if (cp == null) {
+      throw RecoveryException(
+        code: ShadowErrorCode.agentCheckpointMissing,
+        message: 'No checkpoint exists for $taskId',
+        taskId: taskId,
+      );
+    }
+    final resolvedWorkspace = workspaceRoot ?? cp.workspaceRoot;
+    final resolvedRevision = currentProjectRevision ?? cp.projectRevision;
+    final ctx = AgentContext(
+      taskId: taskId,
+      workspaceRoot: resolvedWorkspace,
+      projectRevision: resolvedRevision,
+      metadata: cp.metadata,
+    );
+    final resume = await _recoveryManager.planResume(
+      checkpoint: cp,
+      workspaceRoot: resolvedWorkspace,
+      currentProjectRevision: resolvedRevision,
+      expectedContextHash: ctx.contextHash,
+      allowNonIdempotentReplay: allowNonIdempotentReplay,
+      discardPartialOutputs: discardPartialOutputs,
+    );
+
+    final managed = ManagedTask(
+      id: taskId,
+      request: request ?? cp.request ?? '',
+      context: ctx,
+      state: ManagedTaskState.queued,
+      createdAt: cp.createdAt,
+      plan: resume.plan,
+    );
+    _tasks[taskId] = managed;
+    _resumeCounts[taskId] = resume.resumeCount;
+    // Persist the resumed state before scheduling, so the loop cannot start
+    // from (and later overwrite) the pre-restart checkpoint.
+    await _persistQuietly(
+      taskId,
+      state: AgentTaskState.queued,
+      plan: resume.plan,
+      resumeCount: resume.resumeCount,
+      // Explicitly discarded partial files must not stay advertised on the
+      // resumed checkpoint.
+      partialArtifacts: discardPartialOutputs ? const <String>[] : null,
+    );
+    _scheduler.enqueue(
+      id: taskId,
+      request: managed.request,
+      workspaceRoot: resolvedWorkspace,
+      projectRevision: resolvedRevision,
+    );
+    _maybeStartActive();
+    return managed;
   }
 
   /// Restores an interrupted task from its last checkpoint if valid.
@@ -261,39 +398,77 @@ class AgentController {
     required String request,
     required String workspaceRoot,
     required int currentProjectRevision,
+  }) => resumeTask(
+    taskId: taskId,
+    request: request,
+    workspaceRoot: workspaceRoot,
+    currentProjectRevision: currentProjectRevision,
+  );
+
+  Future<void> _persistQuietly(
+    String taskId, {
+    AgentTaskState? state,
+    AgentPlan? plan,
+    String? errorCode,
+    String? errorMessage,
+    String? summary,
+    int? resumeCount,
+    List<String>? partialArtifacts,
   }) async {
-    final cp = await _recoveryManager.restore(taskId);
-    if (cp == null) {
-      throw StateError(ShadowErrorCode.agentCheckpointMissing);
+    try {
+      await _persist(
+        taskId,
+        state: state,
+        plan: plan,
+        errorCode: errorCode,
+        errorMessage: errorMessage,
+        summary: summary,
+        resumeCount: resumeCount,
+        partialArtifacts: partialArtifacts,
+      );
+    } catch (error) {
+      _lastPersistenceError = error.toString();
     }
-    _recoveryManager.validateForResume(
-      checkpoint: cp,
-      currentProjectRevision: currentProjectRevision,
-      currentWorkspaceRoot: workspaceRoot,
-    );
-    _recoveryManager.assertSafeToRepeatLastTool(cp);
-    final ctx = AgentContext(
+  }
+
+  Future<void> _persist(
+    String taskId, {
+    AgentTaskState? state,
+    AgentPlan? plan,
+    String? errorCode,
+    String? errorMessage,
+    String? summary,
+    int? resumeCount,
+    List<String>? partialArtifacts,
+  }) async {
+    final task = _tasks[taskId];
+    if (task == null) return;
+    final latest = await _recoveryManager.restore(taskId);
+    await _recoveryManager.saveTaskState(
       taskId: taskId,
-      workspaceRoot: workspaceRoot,
-      projectRevision: currentProjectRevision,
+      context: task.context,
+      state: state ?? task.state.toAgentTaskState(),
+      request: task.request,
+      plan:
+          plan ??
+          task.plan ??
+          const AgentPlan(steps: <PlanStep>[], revision: 0),
+      toolCallCount: latest?.toolCallCount ?? 0,
+      pendingStepId: latest?.pendingStepId,
+      lastToolName: latest?.lastToolName,
+      lastToolIdempotent: latest?.lastToolIdempotent,
+      lastToolArgumentsHash: latest?.lastToolArgumentsHash,
+      lastToolStatus: latest?.lastToolStatus ?? CheckpointToolStatus.none,
+      lastToolErrorCode: latest?.lastToolErrorCode,
+      lastToolErrorMessage: latest?.lastToolErrorMessage,
+      resumeCount:
+          resumeCount ?? _resumeCounts[taskId] ?? latest?.resumeCount ?? 0,
+      partialArtifacts: partialArtifacts ?? latest?.partialArtifacts,
+      errorCode: errorCode,
+      errorMessage: errorMessage,
+      summary: summary,
     );
-    final managed = ManagedTask(
-      id: taskId,
-      request: request,
-      context: ctx,
-      state: ManagedTaskState.queued,
-      createdAt: DateTime.now().toUtc(),
-      plan: cp.plan,
-    );
-    _tasks[taskId] = managed;
-    _scheduler.enqueue(
-      id: taskId,
-      request: request,
-      workspaceRoot: workspaceRoot,
-      projectRevision: currentProjectRevision,
-    );
-    _maybeStartActive();
-    return managed;
+    _lastPersistenceError = null;
   }
 
   void _handleLoopEvent(AgentRuntimeEvent event) {
@@ -309,8 +484,14 @@ class AgentController {
     if (event is PlanUpdated) {
       final current = _tasks[event.taskId];
       if (current != null) {
-        _tasks[event.taskId] = current.copyWith(
-          plan: AgentPlan(steps: event.steps, revision: event.revision),
+        final plan = AgentPlan(steps: event.steps, revision: event.revision);
+        _tasks[event.taskId] = current.copyWith(plan: plan);
+        unawaited(
+          _persistQuietly(
+            event.taskId,
+            state: AgentTaskState.acting,
+            plan: plan,
+          ),
         );
       }
     }
@@ -335,19 +516,40 @@ class AgentController {
   }
 
   void _emit(AgentRuntimeEvent event) {
-    if (!_events.isClosed) _events.add(event);
+    if (!_disposed && !_events.isClosed) _events.add(event);
   }
 
   String _nextId() =>
       'task_${DateTime.now().microsecondsSinceEpoch}_${++_idSeq}';
 
   Future<void> dispose() async {
+    if (_disposed) return;
+    _disposed = true;
     for (final t in _tokens.values) {
       t.cancel('disposed');
     }
-    await _events.close();
+    for (final future in _running.values.toList()) {
+      try {
+        await future;
+      } catch (_) {
+        // A task failure must not prevent the rest of teardown.
+      }
+    }
     await _scheduler.dispose();
+    await _events.close();
   }
+}
+
+extension on ManagedTaskState {
+  AgentTaskState toAgentTaskState() => switch (this) {
+    ManagedTaskState.queued => AgentTaskState.queued,
+    ManagedTaskState.planning => AgentTaskState.planning,
+    ManagedTaskState.acting => AgentTaskState.acting,
+    ManagedTaskState.awaitingApproval => AgentTaskState.awaitingApproval,
+    ManagedTaskState.succeeded => AgentTaskState.succeeded,
+    ManagedTaskState.failed => AgentTaskState.failed,
+    ManagedTaskState.cancelled => AgentTaskState.cancelled,
+  };
 }
 
 class _NoopAuditSink implements AuditSink {

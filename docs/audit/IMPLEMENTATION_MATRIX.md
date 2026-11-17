@@ -69,9 +69,9 @@ A feature is **not** "Complete" merely because a library exists; it must be reac
 
 | Field | Value |
 |---|---|
-| **Status** | **Missing (Dart) / Partial (Python spike)** |
-| **Existing** | `ExportDialog` pre-flight via `resolveGraph` + **simulated** timer progress (`src/ui/export/export_dialog.dart:35-69`); Python spike renders a real MP4 with determinism + refusal tests (`tools/media-spike/`) |
-| **Missing** | Dart RenderGraph executor (port the spike), encoder pipeline, atomic output file, progress/ETA/cancel, queue, pre-flight blockers, output-exists handling, "first 3 frames valid" gate (V2-D10), background export, resume after crash |
+| **Status** | **Partial — engine real, desktop UI simulated** |
+| **Existing** | `render_pipeline` reads the closed RenderGraph, plans FFmpeg, queues jobs with progress/cancel/atomic output, and encodes real MP4/WAV through `ProcessRenderBackend`. Real 30s H.264/AAC export and WAV export are verified in [PRODUCTION_READINESS.md](../qa/PRODUCTION_READINESS.md). `ExportDialog` still uses **simulated** timer progress (`src/ui/export/export_dialog.dart:35-69`); Python spike remains the reference (`tools/media-spike/`) |
+| **Missing** | Desktop wiring of `render_pipeline` (`apps/desktop` has no dependency); pre-flight blockers and output-exists UX; "first 3 frames valid" gate (V2-D10); background export and resume after crash |
 | **Dependencies** | F-03 (preview path), Native Media Engine, F-01 |
 | **Order** | Phase 4 |
 | **Acceptance** | Export produces a byte-deterministic MP4 matching the RenderGraph; first 3 frames validated before full render; progress/ETA/cancel real; output written atomically; failure codes mapped to UI messages. |
@@ -111,8 +111,8 @@ A feature is **not** "Complete" merely because a library exists; it must be reac
 | Field | Value |
 |---|---|
 | **Status** | **Partial** |
-| **Existing** | `.ssproj` SQLite, atomic `.part`→rename, integrity check, `SchemaMigrations`, project index, checkpoint store, session/task memory, process-kill tests |
-| **Missing** | Real directory fsync (currently no-op); dedupe of `edit_ops`; unified migration system; index auto-rebuild; crash recovery UI |
+| **Existing** | `.ssproj` SQLite, atomic `.part`→rename, integrity check, `SchemaMigrations`, project index, checkpoint store, session/task memory, process-kill tests; durable agent checkpoints with interrupted-task detection, safe resume, and partial-output tracking ([RECOVERY.md](../architecture/RECOVERY.md)) |
+| **Missing** | Real directory fsync (currently no-op); dedupe of `edit_ops`; unified migration system; index auto-rebuild; crash recovery UI / resume sheet |
 | **Dependencies** | F-06 |
 | **Order** | Phase 2 |
 | **Acceptance** | Kill -9 during save leaves either the old or new file, never corrupt; reopening yields no duplicate ops; index can be deleted and rebuilt from `.ssproj`; migrations are forward-only and idempotent. |
@@ -150,8 +150,8 @@ A feature is **not** "Complete" merely because a library exists; it must be reac
 | Field | Value |
 |---|---|
 | **Status** | **Partial (loop only; no real brain/tools)** |
-| **Existing** | `AgentController`, `execution_loop`, `DefaultPlanner`, `TaskScheduler`, `RecoveryManager`, `AgentLimits`, events |
-| **Missing** | LLM-backed `AgentBrain`; wiring to `ProviderGateway` + `ToolExecutor` + `PermissionManager` + `ContextEngine`; production `ApprovalGate`; cancellation propagation to tools; checkpoint restore |
+| **Existing** | `AgentController`, `execution_loop`, `DefaultPlanner`, `TaskScheduler`, `RecoveryManager`, `AgentLimits`, events; pre/post-tool and terminal checkpoints, crash/restart detection, revision/workspace/hash validation, non-idempotent replay guard, manual resume, partial-output discard |
+| **Missing** | LLM-backed `AgentBrain`; wiring to `ProviderGateway` + `ToolExecutor` + `PermissionManager` + `ContextEngine`; production `ApprovalGate`; automatic cancellation propagation into tool bodies; recovery UI |
 | **Dependencies** | F-08, F-09, F-12, F-13 |
 | **Order** | Phase 3 |
 | **Acceptance** | A user request produces a plan, executes real tools through the permission gate, observes results, and completes or recovers; limits stop runaway loops; cancellation is prompt; state is checkpointed and resumable. |
@@ -311,7 +311,7 @@ F-10 + F-08 ─► F-13 AI surfaces ─► F-15 Localization/a11y
 | F-01 | Project lifecycle | Partial | 1 |
 | F-02 | Timeline editing | Partial | 1 |
 | F-03 | Preview | Missing | 3 |
-| F-04 | Export/render | Missing (Dart) | 4 |
+| F-04 | Export/render | Partial (engine real, UI simulated) | 4 |
 | F-05 | Media ingestion | Partial | 1 |
 | F-06 | Editing Core | Complete | — |
 | F-07 | Persistence | Partial | 2 |

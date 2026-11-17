@@ -31,4 +31,6 @@ export 'package:shadow_contracts/shadow_contracts.dart'
         ToolCallExecutor,
         ApprovalGate,
         AgentCheckpoint,
+        CheckpointToolStatus,
+        CheckpointCorruptException,
         CheckpointStore;

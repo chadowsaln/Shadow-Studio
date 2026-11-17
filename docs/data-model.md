@@ -18,7 +18,7 @@ Shadow Studio keeps two independent stores:
 The index database never becomes a second source of truth for edit data: project
 documents and edit operations live in `*.ssproj`. V2-D11 therefore stays intact.
 
-## 2. Schema version 2
+## 2. Schema version 3
 
 `LocalDatabase` is forward-only. `schema_migrations(version, applied_at)` records
 every applied migration; each migration runs inside `BEGIN IMMEDIATE` and is
@@ -48,6 +48,14 @@ configuration). No duplicate tables were introduced for these categories.
 than a bare `ALTER TABLE`, so databases that predate `provider_configs` (for
 example a legacy v1 index that only ever created `session_memory`) migrate
 cleanly instead of failing with "no such table".
+
+Version 3 adds durable recovery metadata to `execution_checkpoints` (see
+[RECOVERY.md](architecture/RECOVERY.md)): `request`, `metadata_json`,
+`last_tool_status`, `last_tool_error_code`, `last_tool_error_message`,
+`error_code`, `error_message`, `summary`, `resume_count`,
+`partial_artifacts_json`, `last_heartbeat_at`, `run_id`, and `process_id`.
+The migration creates the table when a legacy database never had it, then adds
+missing columns with guarded defaults; existing rows keep their values.
 
 ## 3. Repositories
 
@@ -98,7 +106,7 @@ malformed row degrades to an empty map instead of crashing the read path.
 
 `packages/local_storage/test/storage_data_model_test.dart` covers:
 
-- schema v2 contains every required table;
+- schema v3 contains every required table and checkpoint recovery columns;
 - project CRUD, revision updates, soft delete + cascade, purge;
 - media asset metadata round-trip and FK rejection of unknown projects;
 - timeline track JSON round-trip and per-project listing;
@@ -108,7 +116,9 @@ malformed row degrades to an empty map instead of crashing the read path.
 - provider config `enabled` flags, metadata, and filtering;
 - transaction rollback on failure;
 - integrity check plus reopen-after-close persistence;
-- forward migration from a hand-built v1 database without row loss.
+- forward migration from a hand-built v1 database without row loss;
+- `SqliteCheckpointStore` round-trip, ordering, corruption handling, owner-row
+  creation, and reopen persistence (`test/checkpoint_store_test.dart`).
 
 Run:
 

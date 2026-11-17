@@ -361,8 +361,10 @@ class _Builder {
     return <String>[
       '-c:a',
       preset.audioCodec,
-      if (preset.audioBitrateKbps != null) '-b:a' else '-c:a',
-      if (preset.audioBitrateKbps != null) '${preset.audioBitrateKbps}k',
+      if (preset.audioBitrateKbps != null) ...<String>[
+        '-b:a',
+        '${preset.audioBitrateKbps}k',
+      ],
       '-ar',
       '${preset.audioSampleRate}',
       '-ac',

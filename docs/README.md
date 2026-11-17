@@ -72,8 +72,14 @@ python3 docs/design/verify_design_spec.py   # exit 0 = الوثيقة متسقة
 | [render_pipeline](../packages/render_pipeline) | قارئ `shadow.rendergraph/1` بمخطط مغلق (`RenderGraphDoc` + رموز رفض `RG_*`)، **مخطِّط FFmpeg** (`RenderPlanner`: base، trim/scale/pad، `xfade`/`concat`، طبقات نص、`amix`)، **طابور عرض** (`RenderQueue`: تقدّم، إلغاء تعاوني، مخرج ذرّي `.part` → rename)، و`ProcessRenderBackend` («التقدّم» من `-progress pipe:1`) |
 
 ```bash
-(cd packages/render_pipeline && dart test)   # 28 اختباراً: المخطط + الخطة + الطابور + presets
+(cd packages/render_pipeline && dart test)   # 31 اختباراً: المخطط + الخطة + الطابور + presets + FFmpeg حقيقي (MP4/WAV) + قياس أداء
 ```
+
+## QA / الجاهزية للإنتاج
+
+| الملف | الحالة |
+| --- | --- |
+| [PRODUCTION_READINESS.md](qa/PRODUCTION_READINESS.md) | ❌ **غير جاهز للإنتاج**: تحقق مُنفَّذ من 13 مجالاً؛ المحرّك يمرّ (362 اختباراً، تصدير MP4/WAV حقيقي)، لكن المعاينة والتصدير في سطح المكتب محاكاة، ولا توجد واجهة AI ولا تعريب عربي. يتضمن عيوب تصدير حقيقية أُصلحت واختباراتها. |
 
 ## القادم (بالترتيب، انظر §18 من v2.0)
 
@@ -87,7 +93,7 @@ python3 docs/design/verify_design_spec.py   # exit 0 = الوثيقة متسقة
 | D6 | Provider Gateway + Adapteran | ✅ [provider_gateway](../packages/provider_gateway): Anthropic/OpenAI adapters، transport HTTP، store مفاتيح مشفّر |
 | D7 | Tool Registry + أول 3 أدوات | ✅ [tool_system](../packages/tool_system): `timeline_edit_tool` + `core_editing_adapter` + أدوات الوسائط، بصلاحيات مُنفَّذة |
 | D8 | Permission Engine + Approval UX | ✅ [permissions](../packages/permissions): تصنيف مخاطر، موافقة أحادية مربوطة بـhash، حارس مسارات/أوامر، secret store، تدقيق متسلسل |
-| D9 | Recovery + Agent Checkpoints | ✅ [local_storage](../packages/local_storage) (SQLite + هجرة forward-only) و checkpoints/Recovery في `agent_runtime` |
+| D9 | Recovery + Agent Checkpoints | ✅ checkpoints دائمة + كشف المهام المنقطعة + استئناف يدوي آمن + partial outputs في [RECOVERY.md](architecture/RECOVERY.md)، مع 18 اختبار crash/restart في `agent_runtime` و6 اختبارات SQLite في `local_storage` |
 | D10 | Integration & Test Plan | ✅ [verify.sh](../tool/ci/verify.sh) + [ci.yml](../.github/workflows/ci.yml) يغطيان كل الحزم أعلاه |
 | UX-P1 | Prototype عالي الدقة (timeline + export) | 🟡 نموذج تفاعلي يعمل في المتصفح (RTL + محور LTR، ripple، pre-flight، تقدّم/فشل/استئناف) في [prototype/ux-p1](../prototype/ux-p1/README.md)؛ جاهز لـ T1–T5 |
 | UX-P2 | اختبار 5 مستخدمين | ⏳ لم يبدأ |
