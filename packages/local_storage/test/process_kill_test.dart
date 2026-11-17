@@ -49,7 +49,7 @@ void main() {
 
       final process = await Process.start(
         Platform.executable,
-        [workerScriptPath, filePath],
+        ['run', workerScriptPath, filePath],
         mode: ProcessStartMode.normal,
       );
 

@@ -1,0 +1,16 @@
+name: media_core
+description: Desktop media client and worker abstraction for Shadow Studio (probe, BLAKE3 dedupe, thumbnails, proxies, waveform).
+version: 0.1.0
+resolution: workspace
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  collection: ^1.18.0
+  meta: ^1.11.0
+  path: ^1.9.0
+
+dev_dependencies:
+  lints: ^3.0.0
+  test: ^1.24.0

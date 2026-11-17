@@ -5,3 +5,4 @@ environment:
 workspace:
   - packages/editing_core
   - packages/local_storage
+  - packages/media_core
