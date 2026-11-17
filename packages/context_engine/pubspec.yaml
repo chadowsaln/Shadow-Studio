@@ -12,7 +12,7 @@ dependencies:
   path: ^1.9.0
   shadow_contracts:
     path: ../contracts
-  shadow_local_storage:
+  local_storage:
     path: ../local_storage
 
 dev_dependencies:
