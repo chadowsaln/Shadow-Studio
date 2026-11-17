@@ -84,7 +84,10 @@ jobs:
       - name: Install FFmpeg and Python deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ffmpeg python3-numpy
+          sudo apt-get install -y --no-install-recommends ffmpeg python3-numpy python3-venv
+          python3 -m venv --system-site-packages /opt/media-spike-venv
+          /opt/media-spike-venv/bin/pip install blake3
+          echo "/opt/media-spike-venv/bin" >> "$GITHUB_PATH"
       - name: Resolve dependencies
         run: dart pub get
       - name: Run tests
