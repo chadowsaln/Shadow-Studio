@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
 import 'clip.dart';
+import 'text_layer.dart';
 import 'transition.dart';
 
 /// Track kind supported by the editor.
@@ -20,7 +21,7 @@ enum TrackKind {
   }
 }
 
-/// Track entity containing arranged clips and transitions.
+/// Track entity containing arranged clips, text layers, and transitions.
 ///
 /// Invariants:
 /// - No overlapping clips.
@@ -35,6 +36,7 @@ class Track {
   final bool enabled;
   final List<Clip> clips;
   final List<Transition> transitions;
+  final List<TextLayer> textLayers;
   final int? gainMb;
   final int? panPpm;
 
@@ -46,11 +48,13 @@ class Track {
     this.enabled = true,
     Iterable<Clip> clips = const [],
     Iterable<Transition> transitions = const [],
+    Iterable<TextLayer> textLayers = const [],
     this.gainMb,
     this.panPpm,
   })  : assert(position >= 0, 'position must be >= 0'),
         clips = _ensureSortedClips(clips),
-        transitions = List.unmodifiable(transitions);
+        transitions = List.unmodifiable(transitions),
+        textLayers = List.unmodifiable(textLayers);
 
   static List<Clip> _ensureSortedClips(Iterable<Clip> clips) {
     if (clips is List<Clip>) {
@@ -110,6 +114,7 @@ class Track {
     bool? enabled,
     List<Clip>? clips,
     List<Transition>? transitions,
+    List<TextLayer>? textLayers,
     int? gainMb,
     int? panPpm,
   }) {
@@ -121,6 +126,7 @@ class Track {
       enabled: enabled ?? this.enabled,
       clips: clips ?? this.clips,
       transitions: transitions ?? this.transitions,
+      textLayers: textLayers ?? this.textLayers,
       gainMb: gainMb ?? this.gainMb,
       panPpm: panPpm ?? this.panPpm,
     );
@@ -134,7 +140,8 @@ class Track {
         'enabled': enabled,
         if (kind == TrackKind.video) 'clips': clips.map((c) => c.toJson()).toList(),
         if (kind == TrackKind.audio) 'audio_clips': clips.map((c) => c.toJson()).toList(),
-        if (kind == TrackKind.overlay) 'text_layers': const <Map<String, Object?>>[],
+        if (kind == TrackKind.overlay)
+          'text_layers': textLayers.map((t) => t.toJson()).toList(),
         if (kind == TrackKind.video && transitions.isNotEmpty)
           'transitions': transitions.map((t) => t.toJson()).toList(),
         if (gainMb != null) 'gain_mb': gainMb,
@@ -156,6 +163,11 @@ class Track {
         .map((t) => Transition.fromJson((t as Map).cast<String, Object?>()))
         .toList();
 
+    final rawTextLayers = (json['text_layers'] as List<dynamic>?) ?? const [];
+    final textLayers = rawTextLayers
+        .map((l) => TextLayer.fromJson((l as Map).cast<String, Object?>()))
+        .toList();
+
     return Track(
       id: json['id'] as String,
       kind: kind,
@@ -164,6 +176,7 @@ class Track {
       enabled: (json['enabled'] as bool?) ?? true,
       clips: clips,
       transitions: transitions,
+      textLayers: textLayers,
       gainMb: json['gain_mb'] as int?,
       panPpm: json['pan_ppm'] as int?,
     );
@@ -182,7 +195,8 @@ class Track {
           gainMb == other.gainMb &&
           panPpm == other.panPpm &&
           const ListEquality<Clip>().equals(clips, other.clips) &&
-          const ListEquality<Transition>().equals(transitions, other.transitions);
+          const ListEquality<Transition>().equals(transitions, other.transitions) &&
+          const ListEquality<TextLayer>().equals(textLayers, other.textLayers);
 
   @override
   int get hashCode => Object.hash(
@@ -195,9 +209,10 @@ class Track {
         panPpm,
         const ListEquality<Clip>().hash(clips),
         const ListEquality<Transition>().hash(transitions),
+        const ListEquality<TextLayer>().hash(textLayers),
       );
 
   @override
   String toString() =>
-      'Track(id: $id, kind: ${kind.name}, pos: $position, name: "$name", clips: ${clips.length})';
+      'Track(id: $id, kind: ${kind.name}, pos: $position, name: "$name", clips: ${clips.length}, layers: ${textLayers.length})';
 }

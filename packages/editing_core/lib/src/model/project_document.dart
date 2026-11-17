@@ -19,6 +19,7 @@ class ProjectDocument {
   final String sequenceId;
   final ProjectProfile profile;
   final Timebase timebase;
+  final String backgroundRgba;
   final List<Track> tracks;
   final Map<String, Asset> assets;
 
@@ -28,6 +29,7 @@ class ProjectDocument {
     String? sequenceId,
     required this.profile,
     required this.timebase,
+    this.backgroundRgba = '#000000FF',
     Iterable<Track> tracks = const [],
     Map<String, Asset> assets = const {},
   })  : id = id ?? UuidV7.generate(),
@@ -100,6 +102,7 @@ class ProjectDocument {
     String? sequenceId,
     ProjectProfile? profile,
     Timebase? timebase,
+    String? backgroundRgba,
     List<Track>? tracks,
     Map<String, Asset>? assets,
   }) {
@@ -109,6 +112,7 @@ class ProjectDocument {
       sequenceId: sequenceId ?? this.sequenceId,
       profile: profile ?? this.profile,
       timebase: timebase ?? this.timebase,
+      backgroundRgba: backgroundRgba ?? this.backgroundRgba,
       tracks: tracks ?? this.tracks,
       assets: assets ?? this.assets,
     );
@@ -120,6 +124,7 @@ class ProjectDocument {
         'sequence_id': sequenceId,
         'profile': profile.toJson(),
         'timebase': timebase.toJson(),
+        'background_rgba': backgroundRgba,
         'tracks': tracks.map((t) => t.toJson()).toList(),
         'assets': assets.map((k, v) => MapEntry(k, v.toJson())),
       };
@@ -145,6 +150,7 @@ class ProjectDocument {
       timebase: Timebase.fromJson(
         (json['timebase'] as Map).cast<String, Object?>(),
       ),
+      backgroundRgba: (json['background_rgba'] as String?) ?? '#000000FF',
       tracks: tracks,
       assets: assets,
     );
@@ -160,6 +166,7 @@ class ProjectDocument {
           sequenceId == other.sequenceId &&
           profile == other.profile &&
           timebase == other.timebase &&
+          backgroundRgba == other.backgroundRgba &&
           const ListEquality<Track>().equals(tracks, other.tracks) &&
           const MapEquality<String, Asset>().equals(assets, other.assets);
 
@@ -170,6 +177,7 @@ class ProjectDocument {
         sequenceId,
         profile,
         timebase,
+        backgroundRgba,
         const ListEquality<Track>().hash(tracks),
         const MapEquality<String, Asset>().hash(assets),
       );

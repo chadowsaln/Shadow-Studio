@@ -24,13 +24,17 @@ It implements the timeline data model, pure editing commands, atomic transaction
 
 ### 1. Data Model
 
-- **`ProjectDocument`**: Complete project snapshot containing `name`, `profile` (`ProjectProfile`), `timebase` (`Timebase`), `tracks` (`List<Track>`), and `assets` (`Map<String, Asset>`).
-- **`Track`**: Timeline track with `kind` (`video`, `audio`, `overlay`), dense `position` (0..n-1), `name`, `enabled`, and sorted `clips` and `transitions`.
-- **`Clip`**: Slice of media aligned with `rendergraph.schema.json`. Fields: `id`, `asset_id`, `kind`, `timeline_start_ticks`, `duration_ticks`, `source_in_ticks`, `speed_num`, `speed_den`, `enabled`, `label`, `stream_index`, `opacity_ppm`, `gain_mb`, `pan_ppm`, `fade_in_ticks`, `fade_out_ticks`.
+- **`ProjectDocument`**: Complete project snapshot containing `name`, `profile` (`ProjectProfile`), `timebase` (`Timebase`), `backgroundRgba`, `tracks` (`List<Track>`), and `assets` (`Map<String, Asset>`).
+- **`Track`**: Timeline track with `kind` (`video`, `audio`, `overlay`), dense `position` (0..n-1), `name`, `enabled`, and sorted `clips`, `transitions`, and `textLayers`.
+- **`Clip`**: Slice of media aligned with `rendergraph.schema.json`. Fields: `id`, `asset_id`, `kind`, `timeline_start_ticks`, `duration_ticks`, `source_in_ticks`, `speed_num`, `speed_den`, `enabled`, `label`, `stream_index`, `opacity_ppm`, `transform`, `effects`, `gain_mb`, `pan_ppm`, `fade_in_ticks`, `fade_out_ticks`.
+- **`TransformBox`**: 2D transform definition: `x_px`, `y_px`, `scale_x_ppm`, `scale_y_ppm`, `rotation_quarter_turns` (0..3), `anchor` (`center` | `top_left`), `crop_left_px`, `crop_right_px`, `crop_top_px`, `crop_bottom_px`.
+- **`Effect`**, **`Param`**, **`Keyframe`**: Effect pipeline models aligned with `rendergraph.effects.json` (e.g. `shadow.blur.gaussian`, `shadow.color_balance`), supporting easing curves (`linear`, `ease_in`, `ease_out`, `ease_in_out`, `step`).
+- **`TextLayer`**, **`TextLayerAnimation`**: Overlay text layers carrying raster bindings (`raster_uri`, `raster_hash`, dimensions) and animations (`none`, `fade`, `slide`).
 - **`Asset`**: Immutable descriptor of source media: `id`, `kind` (`video`, `audio`, `image`), `uri`, `duration_ticks`, optional BLAKE3 `hash`.
 - **`Transition`**: Boundary transition: `id`, `kind`, `at_ticks`, `duration_ticks`, `from_clip_id`, `to_clip_id`.
 - **`ProjectProfile`**: Resolution and color configuration: `width`, `height`, `pixel_format`, `color_space`, `interlaced: false`.
 - **`Timebase`**: Clock specification: `ticks_per_second: 1000000`, `fps_num`, `fps_den`, `sample_rate`, `channels`.
+- **`RenderGraph`**: Normative closed-schema contract structure (`RenderGraphTrack`, `RenderGraphVideoClip`, `RenderGraphAudioClip`), validating directly against `rendergraph.schema.json` and consumed by `tools/media-spike`.
 - **`TimeTicks`**: Exact integer math for tick<->frame conversions and frame boundary quantization.
 - **`UuidV7`**: Deterministic and secure RFC 9562 UUIDv7 generator.
 
