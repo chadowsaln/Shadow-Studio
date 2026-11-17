@@ -32,7 +32,7 @@ const List<AgentProviderDescriptor> agentProviders = <AgentProviderDescriptor>[
     id: 'anthropic',
     label: 'Anthropic',
     defaultModel: 'claude-3-5-sonnet-latest',
-    defaultBaseUri: 'https://api.anthropic.com',
+    defaultBaseUri: 'https://api.anthropic.com/v1',
   ),
   AgentProviderDescriptor(
     id: 'gemini',

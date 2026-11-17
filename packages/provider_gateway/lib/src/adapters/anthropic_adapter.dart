@@ -76,7 +76,7 @@ class AnthropicAdapter implements AIProvider {
     required CancellationToken cancel,
   }) async* {
     final key = await _credentials.requireApiKey(id);
-    final uri = _baseUri.resolve('messages');
+    final uri = resolveProviderEndpoint(_baseUri, 'messages');
     final (system, messages) = _messages(request);
     final body = <String, Object?>{
       'model': request.model,

@@ -2,8 +2,22 @@ import 'package:shadow_contracts/shadow_contracts.dart';
 
 import '../provider_exception.dart';
 
+/// Appends [relativePath] to [baseUri] without dropping its last segment.
+///
+/// `Uri.resolve` treats a base without a trailing slash as a file, so
+/// resolving `chat/completions` against `https://api.openai.com/v1` would send
+/// the request to `/chat/completions`. Provider base URIs are directories.
+Uri resolveProviderEndpoint(Uri baseUri, String relativePath) {
+  final path = baseUri.path.endsWith('/') ? baseUri.path : '${baseUri.path}/';
+  return baseUri.replace(path: path).resolve(relativePath);
+}
+
 abstract final class AdapterHttp {
-  static ProviderGatewayException fromStatus(int status, {required String providerId, String? message}) {
+  static ProviderGatewayException fromStatus(
+    int status, {
+    required String providerId,
+    String? message,
+  }) {
     if (status == 401 || status == 403) {
       return ProviderGatewayException(
         code: ShadowErrorCode.providerAuth,
@@ -61,7 +75,7 @@ List<Map<String, Object?>> openAiMessages(AIRequest request) {
             'id': tc.id,
             'type': 'function',
             'function': {'name': tc.name, 'arguments': tc.argumentsJson},
-          }
+          },
       ];
     }
     out.add(map);
@@ -70,13 +84,13 @@ List<Map<String, Object?>> openAiMessages(AIRequest request) {
 }
 
 List<Map<String, Object?>> openAiTools(AIRequest request) => [
-      for (final t in request.tools)
-        {
-          'type': 'function',
-          'function': {
-            'name': t.name,
-            'description': t.description,
-            'parameters': t.inputSchema,
-          }
-        }
-    ];
+  for (final t in request.tools)
+    {
+      'type': 'function',
+      'function': {
+        'name': t.name,
+        'description': t.description,
+        'parameters': t.inputSchema,
+      },
+    },
+];
