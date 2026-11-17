@@ -21,18 +21,18 @@ class ContextSnapshot {
     required this.tokenBudget,
     required this.truncatedSections,
   }) : contextHash = _computeHash(
-          projectId: projectId,
-          projectRevision: projectRevision,
-          workspaceRoot: workspaceRoot,
-          mediaAssets: mediaAssets,
-          selectedTimelineClipIds: selectedTimelineClipIds,
-          timelineStructure: timelineStructure,
-          availableEditingTools: availableEditingTools,
-          environmentCapabilities: environmentCapabilities,
-          currentTaskProgress: currentTaskProgress,
-          previousToolExecutionResults: previousToolExecutionResults,
-          relevantMemorySummaries: relevantMemorySummaries,
-        );
+         projectId: projectId,
+         projectRevision: projectRevision,
+         workspaceRoot: workspaceRoot,
+         mediaAssets: mediaAssets,
+         selectedTimelineClipIds: selectedTimelineClipIds,
+         timelineStructure: timelineStructure,
+         availableEditingTools: availableEditingTools,
+         environmentCapabilities: environmentCapabilities,
+         currentTaskProgress: currentTaskProgress,
+         previousToolExecutionResults: previousToolExecutionResults,
+         relevantMemorySummaries: relevantMemorySummaries,
+       );
 
   final String projectId;
   final int projectRevision;
@@ -54,23 +54,23 @@ class ContextSnapshot {
   final String contextHash;
 
   Map<String, Object?> toJson() => <String, Object?>{
-        'projectId': projectId,
-        'project_revision': projectRevision,
-        'workspace_root': workspaceRoot,
-        'mediaAssets': mediaAssets,
-        'selectedTimelineClipIds': selectedTimelineClipIds,
-        'timelineStructure': timelineStructure,
-        'availableEditingTools': availableEditingTools,
-        'environmentCapabilities': environmentCapabilities,
-        'currentTaskProgress': currentTaskProgress,
-        'previousToolExecutionResults': previousToolExecutionResults,
-        'relevantMemorySummaries': relevantMemorySummaries,
-        'estimatedTokens': estimatedTokens,
-        'tokenBudget': tokenBudget,
-        'truncatedSections': truncatedSections,
-        'context_hash': contextHash,
-        'createdAt': createdAt.toUtc().toIso8601String(),
-      };
+    'projectId': projectId,
+    'project_revision': projectRevision,
+    'workspace_root': workspaceRoot,
+    'mediaAssets': mediaAssets,
+    'selectedTimelineClipIds': selectedTimelineClipIds,
+    'timelineStructure': timelineStructure,
+    'availableEditingTools': availableEditingTools,
+    'environmentCapabilities': environmentCapabilities,
+    'currentTaskProgress': currentTaskProgress,
+    'previousToolExecutionResults': previousToolExecutionResults,
+    'relevantMemorySummaries': relevantMemorySummaries,
+    'estimatedTokens': estimatedTokens,
+    'tokenBudget': tokenBudget,
+    'truncatedSections': truncatedSections,
+    'context_hash': contextHash,
+    'createdAt': createdAt.toUtc().toIso8601String(),
+  };
 
   static String _computeHash({
     required String projectId,

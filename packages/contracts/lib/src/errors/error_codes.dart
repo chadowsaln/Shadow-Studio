@@ -25,12 +25,18 @@ abstract final class ShadowErrorCode {
   static const toolDuplicateName = 'TOOL_DUPLICATE_NAME';
   static const toolResultTooLarge = 'TOOL_RESULT_TOO_LARGE';
   static const toolNotIdempotentRetry = 'TOOL_NOT_IDEMPOTENT_RETRY';
+  static const toolTimeout = 'TOOL_TIMEOUT';
+  static const toolOutputInvalid = 'TOOL_OUTPUT_INVALID';
 
   // Permission
   static const permApprovalRequired = 'PERM_APPROVAL_REQUIRED';
   static const permApprovalInvalid = 'PERM_APPROVAL_INVALID';
   static const permApprovalTimeout = 'PERM_APPROVAL_TIMEOUT';
   static const permPathEscape = 'PERM_PATH_ESCAPE';
+  static const permPolicyUnknown = 'PERM_POLICY_UNKNOWN';
+  static const permPolicyDenied = 'PERM_POLICY_DENIED';
+  static const permShellBlocked = 'PERM_SHELL_BLOCKED';
+  static const permInvalidArgument = 'PERM_INVALID_ARGUMENT';
 
   // Editing
   static const editRevisionMismatch = 'EDIT_REVISION_MISMATCH';
@@ -39,6 +45,7 @@ abstract final class ShadowErrorCode {
   // Media
   static const mediaAssetMissing = 'MEDIA_ASSET_MISSING';
   static const mediaUnsupported = 'MEDIA_UNSUPPORTED';
+  static const mediaCorrupt = 'MEDIA_CORRUPT';
   static const mediaEngineCrash = 'MEDIA_ENGINE_CRASH';
   static const mediaWorkerUnavailable = 'MEDIA_WORKER_UNAVAILABLE';
 

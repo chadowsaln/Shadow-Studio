@@ -5,6 +5,7 @@ import '../model/asset.dart';
 import '../model/clip.dart';
 import '../model/project_document.dart';
 import '../model/track.dart';
+import '../model/transition_kind.dart';
 
 /// Invariant validation for [ProjectDocument].
 ///
@@ -44,6 +45,7 @@ abstract final class DocumentInvariants {
 
     // 2. Unique clip IDs across all tracks
     final allClipIds = <String>{};
+    final allTextLayerIds = <String>{};
 
     for (final track in document.tracks) {
       // 3. Track clips must not overlap and must have positive duration
@@ -57,7 +59,8 @@ abstract final class DocumentInvariants {
 
         // Positive duration
         if (clip.durationTicks <= 0) {
-          violations.add('Clip ${clip.id} has non-positive duration: ${clip.durationTicks}');
+          violations.add(
+              'Clip ${clip.id} has non-positive duration: ${clip.durationTicks}');
         }
 
         // Clip kinds vs Track kinds aligned with rendergraph.schema.json
@@ -67,7 +70,8 @@ abstract final class DocumentInvariants {
           );
         }
         if (track.kind == TrackKind.video && clip.kind == ClipKind.audio) {
-          violations.add('Audio clip ${clip.id} placed on video track ${track.id}');
+          violations
+              .add('Audio clip ${clip.id} placed on video track ${track.id}');
         }
         if (track.kind == TrackKind.overlay) {
           violations.add(
@@ -85,7 +89,8 @@ abstract final class DocumentInvariants {
           } else {
             // Asset kind vs Track kind
             if (track.kind == TrackKind.video) {
-              if (asset.kind != AssetKind.video && asset.kind != AssetKind.image) {
+              if (asset.kind != AssetKind.video &&
+                  asset.kind != AssetKind.image) {
                 violations.add(
                   'Asset ${asset.id} (${asset.kind.name}) cannot be placed on video track ${track.id}',
                 );
@@ -106,7 +111,8 @@ abstract final class DocumentInvariants {
 
             // Clip inside asset bounds
             if (clip.sourceInTicks < 0) {
-              violations.add('Clip ${clip.id} has negative source_in: ${clip.sourceInTicks}');
+              violations.add(
+                  'Clip ${clip.id} has negative source_in: ${clip.sourceInTicks}');
             }
             final sourceOutTicks = clip.sourceEndTicks;
             if (sourceOutTicks > asset.durationTicks) {
@@ -128,8 +134,86 @@ abstract final class DocumentInvariants {
         }
       }
 
+      // 3b. Text layers live on overlay tracks and are internally consistent.
+      for (final layer in track.textLayers) {
+        if (!allTextLayerIds.add(layer.id)) {
+          violations
+              .add('Duplicate text layer ID across document: ${layer.id}');
+        }
+        if (track.kind != TrackKind.overlay) {
+          violations.add(
+            'Text layer ${layer.id} placed on ${track.kind.name} track ${track.id}; text layers require overlay tracks',
+          );
+        }
+        if (layer.startTicks < 0) {
+          violations.add(
+            'Text layer ${layer.id} has negative start: ${layer.startTicks}',
+          );
+        }
+        if (layer.durationTicks <= 0) {
+          violations.add(
+            'Text layer ${layer.id} has non-positive duration: ${layer.durationTicks}',
+          );
+        }
+        final animTotal =
+            layer.animationIn.durationTicks + layer.animationOut.durationTicks;
+        if (layer.animationIn.kind == 'none' &&
+            layer.animationIn.durationTicks != 0) {
+          violations.add(
+            'Text layer ${layer.id} has animation_in duration with kind none',
+          );
+        }
+        if (layer.animationOut.kind == 'none' &&
+            layer.animationOut.durationTicks != 0) {
+          violations.add(
+            'Text layer ${layer.id} has animation_out duration with kind none',
+          );
+        }
+        if (animTotal > layer.durationTicks) {
+          violations.add(
+            'Text layer ${layer.id} animations ($animTotal) exceed duration (${layer.durationTicks})',
+          );
+        }
+        final hasText = layer.text != null && layer.text!.trim().isNotEmpty;
+        if (!hasText && !layer.isRenderable) {
+          violations.add(
+            'Text layer ${layer.id} has neither text nor a complete raster (uri+hash+size)',
+          );
+        }
+        if (layer.rasterUri != null &&
+            (layer.rasterHash == null ||
+                layer.rasterWidth <= 0 ||
+                layer.rasterHeight <= 0)) {
+          violations.add(
+            'Text layer ${layer.id} has raster_uri without hash/positive size',
+          );
+        }
+        if (layer.subtitle &&
+            track.textLayers.any(
+              (other) =>
+                  other.id != layer.id &&
+                  other.subtitle &&
+                  other.startTicks < layer.endTicks &&
+                  layer.startTicks < other.endTicks,
+            )) {
+          violations.add(
+            'Subtitle cue ${layer.id} overlaps another cue on track ${track.id}',
+          );
+        }
+      }
+
       // 4. Transitions must be strictly on the cut boundary of two adjacent clips
+      if (track.kind != TrackKind.video && track.transitions.isNotEmpty) {
+        violations.add(
+          'Track ${track.id} (${track.kind.name}) holds transitions; only video tracks support transitions',
+        );
+      }
       for (final transition in track.transitions) {
+        if (!TransitionKinds.isValid(transition.kind)) {
+          violations.add(
+            'Transition ${transition.id} has unknown kind "${transition.kind}"',
+          );
+        }
         if (transition.durationTicks <= 0) {
           violations.add(
             'Transition ${transition.id} has non-positive duration: ${transition.durationTicks}',
@@ -160,7 +244,8 @@ abstract final class DocumentInvariants {
           }
 
           // Duration check: <= half of shorter clip
-          final maxAllowedDuration = min(fromClip.durationTicks, toClip.durationTicks) ~/ 2;
+          final maxAllowedDuration =
+              min(fromClip.durationTicks, toClip.durationTicks) ~/ 2;
           if (transition.durationTicks > maxAllowedDuration) {
             violations.add(
               'Transition ${transition.id} duration (${transition.durationTicks}) exceeds half of shortest clip ($maxAllowedDuration)',

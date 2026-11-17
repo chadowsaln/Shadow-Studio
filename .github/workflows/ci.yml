@@ -1,0 +1,145 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DART_BIN: dart
+  FLUTTER_BIN: flutter
+
+jobs:
+  format:
+    name: Format (changed files)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: dart pub get
+      - name: Check formatting
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="origin/${{ github.base_ref }}"
+            git fetch origin "${{ github.base_ref }}" --depth=1
+          else
+            base="${{ github.event.before }}"
+          fi
+          tool/ci/check_format.sh "$base"
+
+  analyze:
+    name: Analyze and documentation contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: dart pub get
+      - name: Static analysis
+        run: dart analyze
+      - name: Analyze standalone packages
+        run: |
+          for package in packages/contracts packages/agent_runtime packages/tool_system packages/provider_gateway packages/permissions; do
+            echo "-- $package"
+            (cd "$package" && dart pub get && dart analyze)
+          done
+      - name: Documentation contracts
+        run: python3 tool/ci/validate_docs.py
+
+  test:
+    name: Test (${{ matrix.package }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - packages/contracts
+          - packages/agent_runtime
+          - packages/tool_system
+          - packages/provider_gateway
+          - packages/permissions
+          - packages/local_storage
+          - packages/editing_core
+          - packages/media_core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: dart pub get
+      - name: Run tests
+        working-directory: ${{ matrix.package }}
+        run: |
+          dart pub get
+          dart test --reporter=expanded
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-failure-${{ strategy.job-index }}
+          path: |
+            ${{ matrix.package }}/.dart_tool
+            **/test-results/**
+          if-no-files-found: ignore
+
+  desktop-tests:
+    name: Desktop widget tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+      - name: Resolve dependencies
+        run: dart pub get
+      - name: Run desktop tests
+        working-directory: apps/desktop
+        run: flutter test --reporter=expanded
+
+  desktop-build:
+    name: Desktop build (Linux release)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+      - name: Resolve dependencies
+        run: dart pub get
+      - name: Build release bundle
+        working-directory: apps/desktop
+        run: flutter build linux --release
+      - name: Upload Linux bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: shadow-studio-linux-release
+          path: apps/desktop/build/linux/x64/release/bundle
+          if-no-files-found: error

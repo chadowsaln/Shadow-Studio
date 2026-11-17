@@ -8,7 +8,8 @@ import 'package:editing_core/editing_core.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('Phase 3 Golden Test: EditingService.resolveGraph -> tools/media-spike', () {
+  group('Phase 3 Golden Test: EditingService.resolveGraph -> tools/media-spike',
+      () {
     late DefaultEditingService service;
     late Directory tempDir;
 
@@ -21,7 +22,8 @@ void main() {
         kind: AssetKind.video,
         uri: 'file:///media/user/broll/intro-4k.mp4',
         durationTicks: 10000000,
-        hash: '9f2c1d4e5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f',
+        hash:
+            '9f2c1d4e5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f',
       );
 
       final outroAsset = Asset(
@@ -29,7 +31,8 @@ void main() {
         kind: AssetKind.video,
         uri: 'file:///media/user/broll/outro-hd.mp4',
         durationTicks: 15000000,
-        hash: '1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809',
+        hash:
+            '1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809',
       );
 
       final audioAsset = Asset(
@@ -37,7 +40,8 @@ void main() {
         kind: AssetKind.audio,
         uri: 'file:///media/user/audio/vo-take3.wav',
         durationTicks: 12000000,
-        hash: '7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e',
+        hash:
+            '7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e',
       );
 
       final videoClip1 = Clip.video(
@@ -68,7 +72,8 @@ void main() {
                 value: 0,
                 keyframes: [
                   Keyframe(atTicks: 0, value: 0, easing: 'linear'),
-                  Keyframe(atTicks: 2000000, value: 500000, easing: 'ease_in_out'),
+                  Keyframe(
+                      atTicks: 2000000, value: 500000, easing: 'ease_in_out'),
                 ],
               ),
             ],
@@ -99,8 +104,10 @@ void main() {
 
       final textLayer = TextLayer(
         id: '0198f3b5-0001-7000-8000-0000000000d1',
-        rasterUri: 'file:///home/user/.cache/shadow-studio/derived/4f/4f9c2d1e8a7b.rgba',
-        rasterHash: '4f9c2d1e8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d',
+        rasterUri:
+            'file:///home/user/.cache/shadow-studio/derived/4f/4f9c2d1e8a7b.rgba',
+        rasterHash:
+            '4f9c2d1e8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d',
         rasterWidth: 1200,
         rasterHeight: 180,
         startTicks: 1000000,
@@ -181,7 +188,9 @@ void main() {
       }
     });
 
-    test('resolveGraph produces graph valid against rendergraph.schema.json and consumed by tools/media-spike', () async {
+    test(
+        'resolveGraph produces graph valid against rendergraph.schema.json and consumed by tools/media-spike',
+        () async {
       // 1. Resolve RenderGraph via EditingService
       final graph = service.resolveGraph(
         revision: 218,
@@ -273,15 +282,21 @@ print("SUCCESS_DERIVED_GRAPH_CONSUMED")
       final scriptFile = File('${tempDir.path}/validate_derived.py');
       await scriptFile.writeAsString(pythonScript);
 
-      final result = await Process.run('python3', [scriptFile.path]);
+      // Prefer the media-spike venv (it carries blake3/numpy per tools/media-spike/README.md);
+      // fall back to the system interpreter when no venv is provisioned.
+      final venvPython = File('$repoRoot/tools/media-spike/.venv/bin/python');
+      final pythonExe = venvPython.existsSync() ? venvPython.path : 'python3';
+      final result = await Process.run(pythonExe, [scriptFile.path]);
 
       expect(
         result.exitCode,
         equals(0),
-        reason: 'Python validation script failed:\nstdout: ${result.stdout}\nstderr: ${result.stderr}',
+        reason:
+            'Python validation script failed:\nstdout: ${result.stdout}\nstderr: ${result.stderr}',
       );
 
-      expect(result.stdout.toString(), contains('SUCCESS_DERIVED_GRAPH_CONSUMED'));
+      expect(
+          result.stdout.toString(), contains('SUCCESS_DERIVED_GRAPH_CONSUMED'));
     });
   });
 }

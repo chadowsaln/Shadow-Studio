@@ -1,0 +1,16 @@
+name: render_pipeline
+description: Shadow Studio render pipeline (RenderGraph validation, FFmpeg composition, render queue, preview frames).
+version: 0.1.0
+resolution: workspace
+publish_to: 'none'
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  meta: ^1.16.0
+  path: ^1.9.0
+
+dev_dependencies:
+  lints: ^3.0.0
+  test: ^1.25.0

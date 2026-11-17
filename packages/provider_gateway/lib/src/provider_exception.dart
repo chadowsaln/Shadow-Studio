@@ -18,53 +18,58 @@ class ProviderGatewayException implements Exception {
   final String? providerId;
   final Map<String, Object?> details;
 
-  bool get isAuth => code == ShadowErrorCode.providerAuth || statusCode == 401 || statusCode == 403;
-  bool get isRateLimitOrServer => statusCode == 429 || (statusCode != null && statusCode! >= 500);
+  bool get isAuth =>
+      code == ShadowErrorCode.providerAuth ||
+      statusCode == 401 ||
+      statusCode == 403;
+  bool get isRateLimitOrServer =>
+      statusCode == 429 || (statusCode != null && statusCode! >= 500);
 
   @override
-  String toString() => 'ProviderGatewayException($code, provider=$providerId, status=$statusCode, retryable=$retryable)';
+  String toString() =>
+      'ProviderGatewayException($code, provider=$providerId, status=$statusCode, retryable=$retryable)';
 }
 
 class ProviderTimeoutException extends ProviderGatewayException {
-  ProviderTimeoutException({String? providerId, Duration? timeout})
-      : super(
-          code: ShadowErrorCode.providerRateLimit,
-          message: 'Provider request timed out',
-          retryable: true,
-          providerId: providerId,
-          details: timeout == null ? const <String, Object?>{} : <String, Object?>{'timeout_ms': timeout.inMilliseconds},
-        );
+  ProviderTimeoutException({super.providerId, Duration? timeout})
+    : super(
+        code: ShadowErrorCode.providerRateLimit,
+        message: 'Provider request timed out',
+        retryable: true,
+        details: timeout == null
+            ? const <String, Object?>{}
+            : <String, Object?>{'timeout_ms': timeout.inMilliseconds},
+      );
 }
 
 class ProviderCancelledException extends ProviderGatewayException {
-  ProviderCancelledException({String? providerId, String? reason})
-      : super(
-          code: ShadowErrorCode.agentCancelled,
-          message: 'Provider request cancelled',
-          retryable: false,
-          providerId: providerId,
-          details: reason == null ? const <String, Object?>{} : <String, Object?>{'reason': reason},
-        );
+  ProviderCancelledException({super.providerId, String? reason})
+    : super(
+        code: ShadowErrorCode.agentCancelled,
+        message: 'Provider request cancelled',
+        retryable: false,
+        details: reason == null
+            ? const <String, Object?>{}
+            : <String, Object?>{'reason': reason},
+      );
 }
 
 class BudgetExceededException extends ProviderGatewayException {
-  BudgetExceededException({required String message, Map<String, Object?> details = const <String, Object?>{}})
-      : super(
-          code: ShadowErrorCode.providerBudgetExceeded,
-          message: message,
-          retryable: false,
-          details: details,
-        );
+  BudgetExceededException({
+    required super.message,
+    super.details = const <String, Object?>{},
+  }) : super(code: ShadowErrorCode.providerBudgetExceeded, retryable: false);
 }
 
 class EgressConsentRequiredException extends ProviderGatewayException {
   EgressConsentRequiredException({required this.resourceRefs, this.purpose})
-      : super(
-          code: ShadowErrorCode.permApprovalRequired,
-          message: 'Explicit user consent required before sending media/file content to cloud AI provider',
-          retryable: false,
-          details: const <String, Object?>{'kind': 'egress_consent'},
-        );
+    : super(
+        code: ShadowErrorCode.permApprovalRequired,
+        message:
+            'Explicit user consent required before sending media/file content to cloud AI provider',
+        retryable: false,
+        details: const <String, Object?>{'kind': 'egress_consent'},
+      );
   final List<String> resourceRefs;
   final String? purpose;
 }

@@ -45,8 +45,8 @@ class Clip {
   final List<Effect> effects;
 
   // Audio properties
-  final int gainMb;     // -60,000 to +24,000 (millibels)
-  final int panPpm;     // -1,000,000 to +1,000,000
+  final int gainMb; // -60,000 to +24,000 (millibels)
+  final int panPpm; // -1,000,000 to +1,000,000
   final int fadeInTicks;
   final int fadeOutTicks;
 
@@ -75,9 +75,12 @@ class Clip {
         assert(sourceInTicks >= 0, 'sourceInTicks must be >= 0'),
         assert(speedNum >= 1, 'speedNum must be >= 1'),
         assert(speedDen >= 1, 'speedDen must be >= 1'),
-        assert(opacityPpm >= 0 && opacityPpm <= 1000000, 'opacityPpm must be 0..1000000'),
-        assert(gainMb >= -60000 && gainMb <= 24000, 'gainMb must be -60000..24000'),
-        assert(panPpm >= -1000000 && panPpm <= 1000000, 'panPpm must be -1000000..1000000'),
+        assert(opacityPpm >= 0 && opacityPpm <= 1000000,
+            'opacityPpm must be 0..1000000'),
+        assert(gainMb >= -60000 && gainMb <= 24000,
+            'gainMb must be -60000..24000'),
+        assert(panPpm >= -1000000 && panPpm <= 1000000,
+            'panPpm must be -1000000..1000000'),
         assert(fadeInTicks >= 0, 'fadeInTicks must be >= 0'),
         assert(fadeOutTicks >= 0, 'fadeOutTicks must be >= 0');
 
@@ -179,6 +182,7 @@ class Clip {
     int? panPpm,
     int? fadeInTicks,
     int? fadeOutTicks,
+    bool clearLabel = false,
   }) {
     return Clip(
       id: id ?? this.id,
@@ -190,7 +194,7 @@ class Clip {
       speedNum: speedNum ?? this.speedNum,
       speedDen: speedDen ?? this.speedDen,
       enabled: enabled ?? this.enabled,
-      label: label ?? this.label,
+      label: clearLabel ? null : (label ?? this.label),
       streamIndex: streamIndex ?? this.streamIndex,
       opacityPpm: opacityPpm ?? this.opacityPpm,
       transform: transform ?? this.transform,
@@ -233,7 +237,8 @@ class Clip {
         if (label != null) 'label': label,
         'stream_index': streamIndex,
         'transform': transform.toJson(),
-        if (effects.isNotEmpty) 'effects': effects.map((e) => e.toJson()).toList(),
+        if (effects.isNotEmpty)
+          'effects': effects.map((e) => e.toJson()).toList(),
       };
     }
   }
@@ -329,4 +334,3 @@ class Clip {
   String toString() =>
       'Clip(id: $id, kind: ${kind.name}, start: $timelineStartTicks, dur: $durationTicks, in: $sourceInTicks)';
 }
-

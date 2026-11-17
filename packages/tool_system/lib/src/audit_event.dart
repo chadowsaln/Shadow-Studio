@@ -15,6 +15,7 @@ class ToolExecutionRecord {
     required this.endedAt,
     this.errorCode,
     this.truncated = false,
+    this.status,
   });
 
   final String toolName;
@@ -28,22 +29,42 @@ class ToolExecutionRecord {
   final DateTime endedAt;
   final String? errorCode;
   final bool truncated;
+  final ToolExecutionStatus? status;
 
   Map<String, Object?> toAuditEvent() => <String, Object?>{
-        'type': 'tool_execution',
-        'tool': toolName,
-        'task_id': taskId,
-        'correlation_id': correlationId,
-        'revision_before': revisionBefore,
-        'revision_after': revisionAfter,
-        'arguments_hash': argumentsHash,
-        'success': success,
-        'started_at': startedAt.toIso8601String(),
-        'ended_at': endedAt.toIso8601String(),
-        'duration_ms': endedAt.difference(startedAt).inMilliseconds,
-        if (errorCode != null) 'error_code': errorCode,
-        'truncated': truncated,
-      };
+    'type': 'tool_execution',
+    'tool': toolName,
+    'task_id': taskId,
+    'correlation_id': correlationId,
+    'revision_before': revisionBefore,
+    'revision_after': revisionAfter,
+    'arguments_hash': argumentsHash,
+    'success': success,
+    'started_at': startedAt.toIso8601String(),
+    'ended_at': endedAt.toIso8601String(),
+    'duration_ms': endedAt.difference(startedAt).inMilliseconds,
+    if (errorCode != null) 'error_code': errorCode,
+    'truncated': truncated,
+    'status': (status ?? _deriveStatus(success, errorCode)).name,
+  };
+
+  static ToolExecutionStatus _deriveStatus(bool success, String? errorCode) {
+    if (success) {
+      return ToolExecutionStatus.succeeded;
+    }
+    if (errorCode == ShadowErrorCode.toolTimeout) {
+      return ToolExecutionStatus.timedOut;
+    }
+    if (errorCode == ShadowErrorCode.agentCancelled) {
+      return ToolExecutionStatus.cancelled;
+    }
+    if (errorCode == ShadowErrorCode.permApprovalRequired ||
+        errorCode == ShadowErrorCode.permApprovalInvalid ||
+        errorCode == ShadowErrorCode.permApprovalTimeout) {
+      return ToolExecutionStatus.denied;
+    }
+    return ToolExecutionStatus.failed;
+  }
 }
 
 String hashArguments(Map<String, Object?> args) {

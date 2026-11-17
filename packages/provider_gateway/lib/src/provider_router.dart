@@ -8,7 +8,6 @@ import 'capability_resolver.dart';
 import 'credential_store.dart';
 import 'egress_consent.dart';
 import 'model_selector.dart';
-import 'provider_accounting.dart';
 import 'provider_exception.dart';
 
 @immutable
@@ -27,11 +26,13 @@ class ProviderRouter {
     EgressConsentService? egressConsent,
     ProviderBudgetAccounting? accounting,
     Duration defaultTimeout = const Duration(seconds: 60),
-  })  : _providers = {for (final p in providers) p.id: p},
-        _credentialResolver = ProviderCredentialResolver(credentialStore ?? InMemoryCredentialStore()),
-        _egressConsent = egressConsent ?? const DenyAllEgressConsentService(),
-        _accounting = accounting ?? ProviderBudgetAccounting(),
-        _defaultTimeout = defaultTimeout;
+  }) : _providers = {for (final p in providers) p.id: p},
+       _credentialResolver = ProviderCredentialResolver(
+         credentialStore ?? InMemoryCredentialStore(),
+       ),
+       _egressConsent = egressConsent ?? const DenyAllEgressConsentService(),
+       _accounting = accounting ?? ProviderBudgetAccounting(),
+       _defaultTimeout = defaultTimeout;
 
   final Map<String, AIProvider> _providers;
   final ProviderCredentialResolver _credentialResolver;
@@ -42,9 +43,13 @@ class ProviderRouter {
   ProviderBudgetAccounting get accounting => _accounting;
 
   AIProvider? provider(String id) => _providers[id];
-  List<AIProvider> get providers => List<AIProvider>.unmodifiable(_providers.values);
+  List<AIProvider> get providers =>
+      List<AIProvider>.unmodifiable(_providers.values);
 
-  Future<List<AIModel>> listModels({String? providerId, required CancellationToken cancel}) async {
+  Future<List<AIModel>> listModels({
+    String? providerId,
+    required CancellationToken cancel,
+  }) async {
     final out = <AIModel>[];
     if (providerId != null) {
       final p = _providers[providerId];
@@ -102,13 +107,14 @@ class ProviderRouter {
   }) async* {
     final effectiveTimeout = timeout ?? _defaultTimeout;
     final primaryId = providerId;
-    final chain = <String>[
-      if (primaryId != null) primaryId,
-      ...?fallbackProviderIds,
-    ];
+    final chain = <String>[?primaryId, ...?fallbackProviderIds];
     // If no explicit chain, pick by model/provider resolution from all.
     if (chain.isEmpty) {
-      final target = await resolveTarget(providerId: null, modelId: request.model, cancel: cancel);
+      final target = await resolveTarget(
+        providerId: null,
+        modelId: request.model,
+        cancel: cancel,
+      );
       yield* _streamSingle(
         provider: target.provider,
         model: target.model,
@@ -145,7 +151,9 @@ class ProviderRouter {
             providerId: id,
           );
         }
-        final exact = models.where((AIModel m) => m.id == request.model).toList();
+        final exact = models
+            .where((AIModel m) => m.id == request.model)
+            .toList();
         model = exact.isNotEmpty ? exact.first : models.first;
       } on ProviderGatewayException catch (e) {
         lastError = e;
@@ -173,11 +181,12 @@ class ProviderRouter {
         continue;
       }
     }
-    throw lastError ?? const ProviderGatewayException(
-      code: ShadowErrorCode.providerStreamBroken,
-      message: 'No provider produced a response',
-      retryable: true,
-    );
+    throw lastError ??
+        const ProviderGatewayException(
+          code: ShadowErrorCode.providerStreamBroken,
+          message: 'No provider produced a response',
+          retryable: true,
+        );
   }
 
   bool _canFallback(ProviderGatewayException e) {
@@ -185,7 +194,9 @@ class ProviderRouter {
     if (e.code == ShadowErrorCode.providerBudgetExceeded) return false;
     if (e.code == ShadowErrorCode.providerUnsupported) return false;
     // network/timeout/5xx/429 -> retryable
-    return e.retryable || e.statusCode == 429 || (e.statusCode != null && e.statusCode! >= 500);
+    return e.retryable ||
+        e.statusCode == 429 ||
+        (e.statusCode != null && e.statusCode! >= 500);
   }
 
   Stream<AIStreamEvent> _streamSingle({
@@ -202,29 +213,51 @@ class ProviderRouter {
 
     final adapted = CapabilityResolver.applyToolCapability(request, model);
     CapabilityResolver.ensureRequestSupported(model: model, request: adapted);
-    BudgetEnforcer.checkPreRequest(request: adapted, accounting: _accounting, model: model);
+    BudgetEnforcer.checkPreRequest(
+      request: adapted,
+      accounting: _accounting,
+      model: model,
+    );
 
     final upstream = provider.stream(request: adapted, cancel: cancel);
     final timed = _withTimeout(upstream, timeout, provider.id, cancel);
     TokenUsage? finalUsage;
     await for (final ev in timed) {
       if (cancel.isCancelled) {
-        throw ProviderCancelledException(providerId: provider.id, reason: cancel.reason);
+        throw ProviderCancelledException(
+          providerId: provider.id,
+          reason: cancel.reason,
+        );
       }
       switch (ev) {
         case AIUsageEvent(:final usage):
           finalUsage = usage;
-          BudgetEnforcer.checkPostUsage(usage: usage, request: adapted, model: model, accounting: _accounting);
+          BudgetEnforcer.checkPostUsage(
+            usage: usage,
+            request: adapted,
+            model: model,
+            accounting: _accounting,
+          );
           yield ev;
         case AICompletedEvent(:final usage):
           final u = usage ?? finalUsage;
           if (u != null) {
             finalUsage = u;
-            BudgetEnforcer.checkPostUsage(usage: u, request: adapted, model: model, accounting: _accounting);
+            BudgetEnforcer.checkPostUsage(
+              usage: u,
+              request: adapted,
+              model: model,
+              accounting: _accounting,
+            );
           }
           yield AICompletedEvent(finishReason: ev.finishReason, usage: u);
         case AIErrorEvent(:final code, :final message, :final retryable):
-          final mapped = _mapProviderError(code, message, retryable, provider.id);
+          final mapped = _mapProviderError(
+            code,
+            message,
+            retryable,
+            provider.id,
+          );
           // If we can fallback, throw to outer; else surface error event then throw.
           throw mapped;
         default:
@@ -233,43 +266,82 @@ class ProviderRouter {
     }
   }
 
-  Future<void> _enforceEgressConsent(String providerId, AIRequest request) async {
+  Future<void> _enforceEgressConsent(
+    String providerId,
+    AIRequest request,
+  ) async {
     final payloads = <EgressPayloadDescriptor>[];
     void collectMeta(Map<String, Object?> meta) {
       final raw = meta['egress_payloads'];
       if (raw is! List) return;
       for (final item in raw) {
         if (item is Map) {
-          payloads.add(EgressPayloadDescriptor(
-            kind: (item['kind'] as String?) ?? 'file',
-            resourceRef: (item['ref'] as String?) ?? (item['name'] as String?) ?? 'unknown',
-            mimeType: item['mime'] as String?,
-            approxSizeBytes: item['bytes'] is int ? item['bytes'] as int : null,
-          ));
+          payloads.add(
+            EgressPayloadDescriptor(
+              kind: (item['kind'] as String?) ?? 'file',
+              resourceRef:
+                  (item['ref'] as String?) ??
+                  (item['name'] as String?) ??
+                  'unknown',
+              mimeType: item['mime'] as String?,
+              approxSizeBytes: item['bytes'] is int
+                  ? item['bytes'] as int
+                  : null,
+            ),
+          );
         } else if (item is String) {
-          payloads.add(EgressPayloadDescriptor(kind: 'file', resourceRef: item));
+          payloads.add(
+            EgressPayloadDescriptor(kind: 'file', resourceRef: item),
+          );
         }
       }
     }
+
     collectMeta(request.metadata);
     for (final m in request.messages) {
       collectMeta(m.metadata);
     }
     if (payloads.isEmpty) return;
-    final ok = await _egressConsent.hasConsent(providerId: providerId, payloads: payloads, purpose: request.metadata['egress_purpose'] as String?);
+    final ok = await _egressConsent.hasConsent(
+      providerId: providerId,
+      payloads: payloads,
+      purpose: request.metadata['egress_purpose'] as String?,
+    );
     if (ok) return;
-    final granted = await _egressConsent.requestConsent(providerId: providerId, payloads: payloads, purpose: request.metadata['egress_purpose'] as String?);
+    final granted = await _egressConsent.requestConsent(
+      providerId: providerId,
+      payloads: payloads,
+      purpose: request.metadata['egress_purpose'] as String?,
+    );
     if (!granted) {
-      throw EgressConsentRequiredException(resourceRefs: payloads.map((p) => p.resourceRef).toList());
+      throw EgressConsentRequiredException(
+        resourceRefs: payloads.map((p) => p.resourceRef).toList(),
+      );
     }
   }
 
-  ProviderGatewayException _mapProviderError(String? code, String message, bool retryable, String providerId) {
+  ProviderGatewayException _mapProviderError(
+    String? code,
+    String message,
+    bool retryable,
+    String providerId,
+  ) {
     if (code == ShadowErrorCode.providerAuth) {
-      return ProviderGatewayException(code: ShadowErrorCode.providerAuth, message: message, retryable: false, providerId: providerId, statusCode: 401);
+      return ProviderGatewayException(
+        code: ShadowErrorCode.providerAuth,
+        message: message,
+        retryable: false,
+        providerId: providerId,
+        statusCode: 401,
+      );
     }
     if (code == ShadowErrorCode.providerBudgetExceeded) {
-      return ProviderGatewayException(code: ShadowErrorCode.providerBudgetExceeded, message: message, retryable: false, providerId: providerId);
+      return ProviderGatewayException(
+        code: ShadowErrorCode.providerBudgetExceeded,
+        message: message,
+        retryable: false,
+        providerId: providerId,
+      );
     }
     return ProviderGatewayException(
       code: code ?? ShadowErrorCode.providerStreamBroken,
@@ -280,7 +352,12 @@ class ProviderRouter {
     );
   }
 
-  Stream<AIStreamEvent> _withTimeout(Stream<AIStreamEvent> source, Duration timeout, String providerId, CancellationToken cancel) {
+  Stream<AIStreamEvent> _withTimeout(
+    Stream<AIStreamEvent> source,
+    Duration timeout,
+    String providerId,
+    CancellationToken cancel,
+  ) {
     final controller = StreamController<AIStreamEvent>();
     Timer? timer;
     StreamSubscription<AIStreamEvent>? sub;
@@ -288,26 +365,34 @@ class ProviderRouter {
       timer?.cancel();
       timer = Timer(timeout, () {
         sub?.cancel();
-        controller.addError(ProviderGatewayException(
-          code: ShadowErrorCode.providerRateLimit,
-          message: 'Provider response timed out',
-          retryable: true,
-          providerId: providerId,
-        ));
+        controller.addError(
+          ProviderGatewayException(
+            code: ShadowErrorCode.providerRateLimit,
+            message: 'Provider response timed out',
+            retryable: true,
+            providerId: providerId,
+          ),
+        );
         controller.close();
       });
     }
+
     arm();
-    sub = source.listen((e) {
-      arm();
-      controller.add(e);
-    }, onError: (Object e, StackTrace st) {
-      timer?.cancel();
-      controller.addError(e, st);
-    }, onDone: () {
-      timer?.cancel();
-      controller.close();
-    }, cancelOnError: true);
+    sub = source.listen(
+      (e) {
+        arm();
+        controller.add(e);
+      },
+      onError: (Object e, StackTrace st) {
+        timer?.cancel();
+        controller.addError(e, st);
+      },
+      onDone: () {
+        timer?.cancel();
+        controller.close();
+      },
+      cancelOnError: true,
+    );
     controller.onCancel = () {
       timer?.cancel();
       return sub?.cancel();
