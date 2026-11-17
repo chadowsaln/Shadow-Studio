@@ -1,8 +1,11 @@
-import 'dart:io';
-
 import 'package:shadow_contracts/shadow_contracts.dart';
+import 'package:shadow_permissions/permissions.dart' as perm;
 
-/// Ensures paths stay within workspace and do not escape via symlinks (PERM_PATH_ESCAPE).
+/// Thin adapter over the single canonical path validator.
+///
+/// Kept for the tool-system API surface; the implementation lives in
+/// `shadow_permissions` so the tool pipeline and the permission engine cannot
+/// drift into two different escape checks.
 class WorkspacePathValidator {
   const WorkspacePathValidator();
 
@@ -12,52 +15,24 @@ class WorkspacePathValidator {
     required bool mustExist,
     bool resolveSymlinks = true,
   }) async {
-    final root = Directory(workspaceRoot).absolute;
-    final rootResolved = resolveSymlinks && await root.exists() ? await root.resolveSymbolicLinks() : root.path;
-
-    final candidate = FileSystemEntity.isDirectorySync(candidatePath)
-        ? Directory(candidatePath)
-        : File(candidatePath);
-    final abs = candidate.absolute;
-
-    if (mustExist) {
-      if (!await FileSystemEntity.type(abs.path, followLinks: false).then((t) => t != FileSystemEntityType.notFound)) {
-        // will be checked below by exists
-      }
-      final type = await FileSystemEntity.type(abs.path, followLinks: false);
-      if (type == FileSystemEntityType.notFound) {
-        throw ToolPathException('Path does not exist');
-      }
-    }
-
-    String resolved;
     try {
-      if (await FileSystemEntity.type(abs.path, followLinks: false) != FileSystemEntityType.notFound) {
-        resolved = await File(abs.path).resolveSymbolicLinks().catchError((_) async => Directory(abs.path).resolveSymbolicLinks());
-      } else {
-        // resolve parent for non-existent target
-        final parent = abs.parent;
-        final parentResolved = await parent.exists() ? await Directory(parent.path).resolveSymbolicLinks() : parent.absolute.path;
-        resolved = '$parentResolved${Platform.pathSeparator}${abs.uri.pathSegments.isNotEmpty ? abs.uri.pathSegments.last : ''}';
-      }
-    } catch (_) {
-      resolved = abs.path;
-    }
-
-    final normRoot = _normalize(rootResolved);
-    final normResolved = _normalize(resolved);
-    if (normResolved != normRoot && !normResolved.startsWith('$normRoot${Platform.pathSeparator}')) {
-      throw ToolPathException('Path escapes workspace', code: ShadowErrorCode.permPathEscape);
+      await const perm.PathValidator().assertWithinWorkspace(
+        targetPath: candidatePath,
+        workspaceRoot: workspaceRoot,
+        mustExist: mustExist,
+      );
+    } on perm.PathSecurityException catch (e) {
+      throw ToolPathException(e.message, code: e.code);
     }
   }
-
-  String _normalize(String p) => p.replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'\\+'), r'\').replaceAll(r'\', '/');
 }
 
 class ToolPathException implements Exception {
   ToolPathException(this.message, {this.code = ShadowErrorCode.permPathEscape});
+
   final String message;
   final String code;
+
   @override
   String toString() => message;
 }

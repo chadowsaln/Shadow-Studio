@@ -44,24 +44,28 @@ class ContextBuildInput {
 
 /// Builds reproducible, budgeted [ContextSnapshot]s.
 class ContextBuilder {
-  ContextBuilder({
-    ContextTrimmer? trimmer,
-    MemoryManager? memoryManager,
-  })  : _trimmer = trimmer ?? const ContextTrimmer(),
-        _memoryManager = memoryManager;
+  ContextBuilder({ContextTrimmer? trimmer, MemoryManager? memoryManager})
+    : _trimmer = trimmer ?? const ContextTrimmer(),
+      _memoryManager = memoryManager;
 
   final ContextTrimmer _trimmer;
   final MemoryManager? _memoryManager;
 
   ContextSnapshot build(ContextBuildInput input, {int? tokenBudget}) {
-    final memories = _memoryManager?.retrieveRelevantSummaries(
+    final memories =
+        _memoryManager?.retrieveRelevantSummaries(
           projectId: input.projectId,
           query: input.memoryQuery,
         ) ??
         const <Map<String, Object?>>[];
 
     final sanitizedAssets = input.mediaAssets
-        .map((a) => _sanitizeMediaAsset(a, egressConsentGranted: input.egressConsentGranted))
+        .map(
+          (a) => _sanitizeMediaAsset(
+            a,
+            egressConsentGranted: input.egressConsentGranted,
+          ),
+        )
         .toList(growable: false);
 
     final trimmed = _trimmer.trim(
@@ -74,8 +78,12 @@ class ContextBuilder {
       availableEditingTools: input.availableEditingTools
           .map((t) => Map<String, Object?>.from(t))
           .toList(growable: false),
-      environmentCapabilities: Map<String, Object?>.from(input.environmentCapabilities),
-      currentTaskProgressList: [Map<String, Object?>.from(input.currentTaskProgress)],
+      environmentCapabilities: Map<String, Object?>.from(
+        input.environmentCapabilities,
+      ),
+      currentTaskProgressList: [
+        Map<String, Object?>.from(input.currentTaskProgress),
+      ],
       previousToolExecutionResults: input.previousToolExecutionResults
           .map((r) => _sanitizeToolResult(r))
           .toList(growable: false),
@@ -109,7 +117,13 @@ class ContextBuilder {
     // Never include raw file bytes/entire media payloads. Keep metadata and
     // extracted keyframes references/metadata only.
     const blockedKeys = {
-      'bytes', 'data', 'binary', 'contentBytes', 'fileBytes', 'raw', 'base64',
+      'bytes',
+      'data',
+      'binary',
+      'contentBytes',
+      'fileBytes',
+      'raw',
+      'base64',
       'blob',
     };
     final out = <String, Object?>{};

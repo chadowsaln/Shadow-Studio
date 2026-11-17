@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:shadow_contracts/shadow_contracts.dart';
+import 'package:shadow_permissions/permissions.dart' as perm;
 
 import 'audit_event.dart';
-import 'schema_validator.dart';
 import 'tool_registry.dart';
 import 'workspace_path_validator.dart';
 
@@ -15,16 +15,15 @@ class ToolExecutor {
     required ToolRegistry registry,
     required PermissionService permissions,
     ToolSchemaValidator? schemaValidator,
-    WorkspacePathValidator? pathValidator,
-  })  : _registry = registry,
-        _permissions = permissions,
-        _schemaValidator = schemaValidator ?? const ToolSchemaValidator(),
-        _pathValidator = pathValidator ?? const WorkspacePathValidator();
+  }) : _registry = registry,
+       _permissions = permissions,
+       _schemaValidator = schemaValidator ?? const ToolSchemaValidator(),
+       _contractValidator = const ToolContractValidator();
 
   final ToolRegistry _registry;
   final PermissionService _permissions;
   final ToolSchemaValidator _schemaValidator;
-  final WorkspacePathValidator _pathValidator;
+  final ToolContractValidator _contractValidator;
 
   Future<ToolExecutionOutcome> executeCall({
     required String toolName,
@@ -41,7 +40,10 @@ class ToolExecutor {
     // 1-2. resolve
     final tool = _registry.resolve(toolName);
     if (tool == null) {
-      final result = fail(ShadowErrorCode.toolNotFound, 'Unknown tool: $toolName');
+      final result = fail(
+        ShadowErrorCode.toolNotFound,
+        'Unknown tool: $toolName',
+      );
       final record = ToolExecutionRecord(
         toolName: toolName,
         taskId: context.taskId,
@@ -64,10 +66,23 @@ class ToolExecutor {
       }
 
       // 3. validate args (closed schema, reject additional properties)
-      final validation = _schemaValidator.validate(schema: tool.inputSchema, arguments: arguments);
+      final validation = _schemaValidator.validate(
+        schema: tool.inputSchema,
+        arguments: arguments,
+      );
       if (!validation.isValid) {
-        final result = fail(ShadowErrorCode.toolInvalidArgs, 'Invalid arguments: ${validation.errors.join('; ')}');
-        return await _finalize(tool, context, started, argsHash, result, context.revision);
+        final result = fail(
+          ShadowErrorCode.toolInvalidArgs,
+          'Invalid arguments: ${validation.errors.join('; ')}',
+        );
+        return await _finalize(
+          tool,
+          context,
+          started,
+          argsHash,
+          result,
+          context.revision,
+        );
       }
 
       // 4. permissions
@@ -83,32 +98,104 @@ class ToolExecutor {
             ? (decision.reasonCode ?? ShadowErrorCode.permApprovalRequired)
             : (decision.reasonCode ?? ShadowErrorCode.permPathEscape);
         final result = fail(code, decision.reason ?? 'Permission denied');
-        return await _finalize(tool, context, started, argsHash, result, context.revision);
+        return await _finalize(
+          tool,
+          context,
+          started,
+          argsHash,
+          result,
+          context.revision,
+        );
       }
 
-      // 5. validate workspace paths in args
-      await _validatePathArguments(arguments, context);
+      // 5. validate workspace paths in args and hand the tool canonical paths
+      final resolvedArguments = await _validatePathArguments(
+        arguments,
+        context,
+      );
 
-      // 6. execute with cancellation
+      // 6. execute with cancellation + per-tool timeout
       context.cancel.throwIfCancelled();
-      final execFuture = tool.execute(context, arguments);
-      final resultRaw = await _withCancellation(execFuture, context.cancel);
+      final execFuture = tool.execute(context, resolvedArguments);
+      final ToolResult resultRaw;
+      try {
+        resultRaw = await runWithTimeout<ToolResult>(
+          timeout: tool.timeout,
+          cancel: context.cancel,
+          operation: tool.name,
+          body: () => _withCancellation(execFuture, context.cancel),
+        );
+      } on ShadowTimeoutException catch (e) {
+        final timeoutResult = ToolResult.failure(
+          code: ShadowErrorCode.toolTimeout,
+          message: e.toString(),
+          data: <String, Object?>{
+            'timeout_ms': tool.timeout.inMilliseconds,
+            'tool': tool.name,
+          },
+        );
+        return await _finalize(
+          tool,
+          context,
+          started,
+          argsHash,
+          timeoutResult,
+          context.revision,
+        );
+      }
 
-      // 7. validate/limit result
+      // 7. limit size, then validate against the declared output schema
       final limited = _limitResult(resultRaw);
+      // A truncated result is already a terminal, lossy outcome; validating its
+      // minimal payload against the full output schema would only mask the
+      // truncation with a misleading schema error.
+      final validated = limited.truncated
+          ? limited
+          : _validateOutput(tool, limited);
 
       // 8. audit (9. return)
-      final revAfter = _extractRevision(limited);
-      return await _finalize(tool, context, started, argsHash, limited, revAfter ?? context.revision);
+      final revAfter = _extractRevision(validated);
+      return await _finalize(
+        tool,
+        context,
+        started,
+        argsHash,
+        validated,
+        revAfter ?? context.revision,
+      );
     } on CancelledException catch (e) {
-      final result = fail(ShadowErrorCode.agentCancelled, e.reason ?? 'Cancelled');
-      return await _finalize(tool, context, started, argsHash, result, context.revision);
+      final result = fail(
+        ShadowErrorCode.agentCancelled,
+        e.reason ?? 'Cancelled',
+      );
+      return await _finalize(
+        tool,
+        context,
+        started,
+        argsHash,
+        result,
+        context.revision,
+      );
     } on ToolPathException catch (e) {
       final result = fail(e.code, e.message);
-      return await _finalize(tool, context, started, argsHash, result, context.revision);
+      return await _finalize(
+        tool,
+        context,
+        started,
+        argsHash,
+        result,
+        context.revision,
+      );
     } catch (e) {
       final result = fail(ShadowErrorCode.toolFailed, 'Tool execution failed');
-      return await _finalize(tool, context, started, argsHash, result, context.revision);
+      return await _finalize(
+        tool,
+        context,
+        started,
+        argsHash,
+        result,
+        context.revision,
+      );
     }
   }
 
@@ -137,23 +224,29 @@ class ToolExecutor {
     return ToolExecutionOutcome(result: result, record: record);
   }
 
-  Future<void> _validatePathArguments(Map<String, Object?> args, ToolContext context) async {
-    const pathKeys = {'path', 'file_path', 'filePath', 'project_path', 'projectPath', 'media_path', 'mediaPath', 'directory', 'dir'};
-    for (final entry in args.entries) {
-      if (!pathKeys.contains(entry.key)) continue;
-      final v = entry.value;
-      if (v is String && v.isNotEmpty) {
-        await _pathValidator.validateWithinWorkspace(
-          candidatePath: v,
-          workspaceRoot: context.workspaceRoot,
-          mustExist: false,
-          resolveSymlinks: true,
-        );
-      }
+  /// Defense in depth: the permission service already validates paths, but the
+  /// executor must not depend on a caller-supplied implementation doing so.
+  /// Uses the canonical, deny-by-default argument guard from `permissions` and
+  /// passes the returned map (canonical absolute paths) to the tool, so the path
+  /// executed is exactly the path validated — never a CWD-relative reinterpretation.
+  Future<Map<String, Object?>> _validatePathArguments(
+    Map<String, Object?> args,
+    ToolContext context,
+  ) async {
+    try {
+      return await perm.WorkspaceGuard().resolveArgumentPaths(
+        arguments: args,
+        workspaceRoot: context.workspaceRoot,
+      );
+    } on perm.PathSecurityException catch (e) {
+      throw ToolPathException(e.message, code: e.code);
     }
   }
 
-  Future<ToolResult> _withCancellation(Future<ToolResult> future, CancellationToken cancel) async {
+  Future<ToolResult> _withCancellation(
+    Future<ToolResult> future,
+    CancellationToken cancel,
+  ) async {
     if (cancel.isCancelled) throw CancelledException(reason: cancel.reason);
     final completer = Completer<ToolResult>();
     StreamSubscription<void>? sub;
@@ -162,16 +255,32 @@ class ToolExecutor {
         completer.completeError(CancelledException(reason: cancel.reason));
       }
     });
-    future.then((v) {
-      if (!completer.isCompleted) completer.complete(v);
-    }, onError: (Object e, StackTrace st) {
-      if (!completer.isCompleted) completer.completeError(e, st);
-    });
+    future.then(
+      (v) {
+        if (!completer.isCompleted) completer.complete(v);
+      },
+      onError: (Object e, StackTrace st) {
+        if (!completer.isCompleted) completer.completeError(e, st);
+      },
+    );
     try {
       return await completer.future;
     } finally {
       await sub.cancel();
     }
+  }
+
+  ToolResult _validateOutput(AgentTool tool, ToolResult result) {
+    final outputErrors = _contractValidator.validateResult(tool, result);
+    if (outputErrors.isEmpty) return result;
+    return ToolResult.failure(
+      code: ShadowErrorCode.toolOutputInvalid,
+      message:
+          'Tool output does not match outputSchema: ${outputErrors.join('; ')}',
+      data: <String, Object?>{'errors': outputErrors},
+      artifacts: result.artifacts,
+      duration: result.duration,
+    );
   }
 
   ToolResult _limitResult(ToolResult result) {

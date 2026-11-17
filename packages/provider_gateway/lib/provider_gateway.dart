@@ -8,6 +8,7 @@ export 'src/provider_accounting.dart';
 export 'src/provider_exception.dart';
 export 'src/provider_router.dart';
 export 'src/provider_transport.dart';
+export 'src/http_provider_transport.dart';
 export 'src/tool_call_normalizer.dart';
 export 'src/adapters/openai_adapter.dart';
 export 'src/adapters/gemini_adapter.dart';

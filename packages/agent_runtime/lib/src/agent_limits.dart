@@ -19,11 +19,11 @@ class AgentRuntimeLimits {
   final int maxPendingApprovals;
 
   AgentBudget toBudget() => AgentBudget(
-        maxToolCalls: maxToolCalls,
-        maxDuration: maxDuration,
-        maxInputTokens: maxInputTokensPerTask,
-        maxSameToolRepeat: maxConsecutiveIdenticalToolCalls,
-      );
+    maxToolCalls: maxToolCalls,
+    maxDuration: maxDuration,
+    maxInputTokens: maxInputTokensPerTask,
+    maxSameToolRepeat: maxConsecutiveIdenticalToolCalls,
+  );
 }
 
 class TaskBudgetExceededException implements Exception {

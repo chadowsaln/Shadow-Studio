@@ -1,12 +1,9 @@
+import 'package:shadow_context_engine/context_engine.dart';
 import 'package:shadow_contracts/shadow_contracts.dart';
-import 'planner.dart';
 
 /// Typed UI-facing events (plans/progress/tool activity/results only, no CoT).
 sealed class AgentRuntimeEvent {
-  const AgentRuntimeEvent({
-    required this.taskId,
-    required this.timestamp,
-  });
+  const AgentRuntimeEvent({required this.taskId, required this.timestamp});
 
   final String taskId;
   final DateTime timestamp;
@@ -27,13 +24,13 @@ class TaskStarted extends AgentRuntimeEvent {
   final int projectRevision;
   @override
   Map<String, Object?> toJson() => {
-        'type': 'TaskStarted',
-        'taskId': taskId,
-        'timestamp': timestamp.toIso8601String(),
-        'request': request,
-        'workspaceRoot': workspaceRoot,
-        'projectRevision': projectRevision,
-      };
+    'type': 'TaskStarted',
+    'taskId': taskId,
+    'timestamp': timestamp.toIso8601String(),
+    'request': request,
+    'workspaceRoot': workspaceRoot,
+    'projectRevision': projectRevision,
+  };
 }
 
 class PlanUpdated extends AgentRuntimeEvent {
@@ -49,13 +46,13 @@ class PlanUpdated extends AgentRuntimeEvent {
   final String? reason;
   @override
   Map<String, Object?> toJson() => {
-        'type': 'PlanUpdated',
-        'taskId': taskId,
-        'timestamp': timestamp.toIso8601String(),
-        'revision': revision,
-        if (reason != null) 'reason': reason,
-        'steps': steps.map((s) => s.toJson()).toList(),
-      };
+    'type': 'PlanUpdated',
+    'taskId': taskId,
+    'timestamp': timestamp.toIso8601String(),
+    'revision': revision,
+    if (reason != null) 'reason': reason,
+    'steps': steps.map((s) => s.toJson()).toList(),
+  };
 }
 
 class StepStarted extends AgentRuntimeEvent {
@@ -71,13 +68,13 @@ class StepStarted extends AgentRuntimeEvent {
   final int index;
   @override
   Map<String, Object?> toJson() => {
-        'type': 'StepStarted',
-        'taskId': taskId,
-        'timestamp': timestamp.toIso8601String(),
-        'stepId': stepId,
-        'description': description,
-        'index': index,
-      };
+    'type': 'StepStarted',
+    'taskId': taskId,
+    'timestamp': timestamp.toIso8601String(),
+    'stepId': stepId,
+    'description': description,
+    'index': index,
+  };
 }
 
 class ToolCallRequested extends AgentRuntimeEvent {
@@ -95,14 +92,14 @@ class ToolCallRequested extends AgentRuntimeEvent {
   final String stepId;
   @override
   Map<String, Object?> toJson() => {
-        'type': 'ToolCallRequested',
-        'taskId': taskId,
-        'timestamp': timestamp.toIso8601String(),
-        'callId': callId,
-        'toolName': toolName,
-        'arguments': arguments,
-        'stepId': stepId,
-      };
+    'type': 'ToolCallRequested',
+    'taskId': taskId,
+    'timestamp': timestamp.toIso8601String(),
+    'callId': callId,
+    'toolName': toolName,
+    'arguments': arguments,
+    'stepId': stepId,
+  };
 }
 
 class ToolExecutionStarted extends AgentRuntimeEvent {
@@ -118,13 +115,13 @@ class ToolExecutionStarted extends AgentRuntimeEvent {
   final int attempt;
   @override
   Map<String, Object?> toJson() => {
-        'type': 'ToolExecutionStarted',
-        'taskId': taskId,
-        'timestamp': timestamp.toIso8601String(),
-        'callId': callId,
-        'toolName': toolName,
-        'attempt': attempt,
-      };
+    'type': 'ToolExecutionStarted',
+    'taskId': taskId,
+    'timestamp': timestamp.toIso8601String(),
+    'callId': callId,
+    'toolName': toolName,
+    'attempt': attempt,
+  };
 }
 
 class ToolExecutionCompleted extends AgentRuntimeEvent {
@@ -142,14 +139,14 @@ class ToolExecutionCompleted extends AgentRuntimeEvent {
   final int attempt;
   @override
   Map<String, Object?> toJson() => {
-        'type': 'ToolExecutionCompleted',
-        'taskId': taskId,
-        'timestamp': timestamp.toIso8601String(),
-        'callId': callId,
-        'toolName': toolName,
-        'attempt': attempt,
-        'result': result.toJson(),
-      };
+    'type': 'ToolExecutionCompleted',
+    'taskId': taskId,
+    'timestamp': timestamp.toIso8601String(),
+    'callId': callId,
+    'toolName': toolName,
+    'attempt': attempt,
+    'result': result.toJson(),
+  };
 }
 
 class ApprovalRequested extends AgentRuntimeEvent {
@@ -169,15 +166,15 @@ class ApprovalRequested extends AgentRuntimeEvent {
   final String? reason;
   @override
   Map<String, Object?> toJson() => {
-        'type': 'ApprovalRequested',
-        'taskId': taskId,
-        'timestamp': timestamp.toIso8601String(),
-        'callId': callId,
-        'toolName': toolName,
-        'arguments': arguments,
-        'riskLevel': riskLevel.name,
-        if (reason != null) 'reason': reason,
-      };
+    'type': 'ApprovalRequested',
+    'taskId': taskId,
+    'timestamp': timestamp.toIso8601String(),
+    'callId': callId,
+    'toolName': toolName,
+    'arguments': arguments,
+    'riskLevel': riskLevel.name,
+    if (reason != null) 'reason': reason,
+  };
 }
 
 class TaskProgress extends AgentRuntimeEvent {
@@ -195,14 +192,14 @@ class TaskProgress extends AgentRuntimeEvent {
   final int toolCallsUsed;
   @override
   Map<String, Object?> toJson() => {
-        'type': 'TaskProgress',
-        'taskId': taskId,
-        'timestamp': timestamp.toIso8601String(),
-        'message': message,
-        'completedSteps': completedSteps,
-        'totalSteps': totalSteps,
-        'toolCallsUsed': toolCallsUsed,
-      };
+    'type': 'TaskProgress',
+    'taskId': taskId,
+    'timestamp': timestamp.toIso8601String(),
+    'message': message,
+    'completedSteps': completedSteps,
+    'totalSteps': totalSteps,
+    'toolCallsUsed': toolCallsUsed,
+  };
 }
 
 class TaskCompleted extends AgentRuntimeEvent {
@@ -216,12 +213,12 @@ class TaskCompleted extends AgentRuntimeEvent {
   final Map<String, Object?> result;
   @override
   Map<String, Object?> toJson() => {
-        'type': 'TaskCompleted',
-        'taskId': taskId,
-        'timestamp': timestamp.toIso8601String(),
-        'summary': summary,
-        'result': result,
-      };
+    'type': 'TaskCompleted',
+    'taskId': taskId,
+    'timestamp': timestamp.toIso8601String(),
+    'summary': summary,
+    'result': result,
+  };
 }
 
 class TaskFailed extends AgentRuntimeEvent {
@@ -237,13 +234,13 @@ class TaskFailed extends AgentRuntimeEvent {
   final bool retryable;
   @override
   Map<String, Object?> toJson() => {
-        'type': 'TaskFailed',
-        'taskId': taskId,
-        'timestamp': timestamp.toIso8601String(),
-        'code': code,
-        'message': message,
-        'retryable': retryable,
-      };
+    'type': 'TaskFailed',
+    'taskId': taskId,
+    'timestamp': timestamp.toIso8601String(),
+    'code': code,
+    'message': message,
+    'retryable': retryable,
+  };
 }
 
 class TaskCancelled extends AgentRuntimeEvent {
@@ -255,9 +252,28 @@ class TaskCancelled extends AgentRuntimeEvent {
   final String? reason;
   @override
   Map<String, Object?> toJson() => {
-        'type': 'TaskCancelled',
-        'taskId': taskId,
-        'timestamp': timestamp.toIso8601String(),
-        if (reason != null) 'reason': reason,
-      };
+    'type': 'TaskCancelled',
+    'taskId': taskId,
+    'timestamp': timestamp.toIso8601String(),
+    if (reason != null) 'reason': reason,
+  };
+}
+
+/// Emitted after each tool result with the rebuilt, budgeted context snapshot.
+class ContextUpdated extends AgentRuntimeEvent {
+  const ContextUpdated({
+    required super.taskId,
+    required super.timestamp,
+    required this.snapshot,
+  });
+
+  final ContextSnapshot snapshot;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'ContextUpdated',
+    'taskId': taskId,
+    'timestamp': timestamp.toIso8601String(),
+    'context': snapshot.toJson(),
+  };
 }

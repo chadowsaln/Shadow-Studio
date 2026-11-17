@@ -7,8 +7,8 @@ class AgentContext {
     required this.workspaceRoot,
     required int projectRevision,
     Map<String, Object?> metadata = const <String, Object?>{},
-  })  : _projectRevision = projectRevision,
-        _metadata = Map<String, Object?>.unmodifiable(metadata);
+  }) : _projectRevision = projectRevision,
+       _metadata = Map<String, Object?>.unmodifiable(metadata);
 
   final String taskId;
   final String workspaceRoot;
@@ -49,20 +49,18 @@ class AgentContext {
   }
 
   Map<String, Object?> toJson() => <String, Object?>{
-        'taskId': taskId,
-        'workspaceRoot': workspaceRoot,
-        'projectRevision': _projectRevision,
-        'metadata': _metadata,
-        'contextHash': contextHash,
-      };
+    'taskId': taskId,
+    'workspaceRoot': workspaceRoot,
+    'projectRevision': _projectRevision,
+    'metadata': _metadata,
+    'contextHash': contextHash,
+  };
 }
 
 Object? _canonicalize(Object? value) {
   if (value is Map) {
     final keys = value.keys.map((k) => k.toString()).toList()..sort();
-    return <String, Object?>{
-      for (final k in keys) k: _canonicalize(value[k]),
-    };
+    return <String, Object?>{for (final k in keys) k: _canonicalize(value[k])};
   }
   if (value is List) return value.map(_canonicalize).toList();
   return value;

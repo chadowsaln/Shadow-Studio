@@ -1,47 +1,6 @@
-import 'package:meta/meta.dart';
 import 'package:shadow_contracts/shadow_contracts.dart';
 
 import 'agent_context.dart';
-import 'planner.dart';
-
-@immutable
-class AgentCheckpoint {
-  const AgentCheckpoint({
-    required this.taskId,
-    required this.sequence,
-    required this.createdAt,
-    required this.contextHash,
-    required this.projectRevision,
-    required this.workspaceRoot,
-    required this.plan,
-    required this.toolCallCount,
-    required this.pendingStepId,
-    this.lastToolName,
-    this.lastToolIdempotent,
-    this.lastToolArgumentsHash,
-    this.state = AgentTaskState.acting,
-  });
-
-  final String taskId;
-  final int sequence;
-  final DateTime createdAt;
-  final String contextHash;
-  final int projectRevision;
-  final String workspaceRoot;
-  final AgentPlan plan;
-  final int toolCallCount;
-  final String? pendingStepId;
-  final String? lastToolName;
-  final bool? lastToolIdempotent;
-  final String? lastToolArgumentsHash;
-  final AgentTaskState state;
-}
-
-abstract interface class CheckpointStore {
-  Future<void> save(AgentCheckpoint checkpoint);
-  Future<AgentCheckpoint?> latest(String taskId);
-  Future<void> clear(String taskId);
-}
 
 class InMemoryCheckpointStore implements CheckpointStore {
   final Map<String, AgentCheckpoint> _latest = <String, AgentCheckpoint>{};
@@ -62,7 +21,8 @@ class InMemoryCheckpointStore implements CheckpointStore {
 
 /// Saves checkpoints and restores interrupted tasks safely.
 class RecoveryManager {
-  RecoveryManager({CheckpointStore? store}) : _store = store ?? InMemoryCheckpointStore();
+  RecoveryManager({CheckpointStore? store})
+    : _store = store ?? InMemoryCheckpointStore();
 
   final CheckpointStore _store;
   final Map<String, int> _sequences = <String, int>{};

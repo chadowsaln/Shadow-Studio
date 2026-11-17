@@ -1,6 +1,7 @@
 name: shadow_agent_runtime
 description: Shadow Studio AI Agent runtime (controller, loop, planner, scheduler, recovery).
 version: 0.1.0
+resolution: workspace
 publish_to: 'none'
 
 environment:
@@ -8,9 +9,21 @@ environment:
 
 dependencies:
   meta: ^1.16.0
+  shadow_context_engine:
+    path: ../context_engine
   shadow_contracts:
     path: ../contracts
+  shadow_provider_gateway:
+    path: ../provider_gateway
 
 dev_dependencies:
-  lints: ^6.0.0
+  lints: ^3.0.0
+  editing_core:
+    path: ../editing_core
+  media_core:
+    path: ../media_core
+  shadow_permissions:
+    path: ../permissions
+  shadow_tool_system:
+    path: ../tool_system
   test: ^1.25.0

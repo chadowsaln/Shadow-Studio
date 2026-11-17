@@ -1,4 +1,3 @@
-import 'package:shadow_agent_runtime/agent_runtime.dart';
 import 'package:shadow_contracts/shadow_contracts.dart';
 
 class FakeTool implements AgentTool {
@@ -7,9 +6,13 @@ class FakeTool implements AgentTool {
     this.riskLevel = ToolRiskLevel.safe,
     this.idempotent = true,
     this.timeout = const Duration(seconds: 5),
-    this.inputSchema = const <String, Object?>{'type': 'object', 'additionalProperties': false},
+    this.inputSchema = const <String, Object?>{
+      'type': 'object',
+      'additionalProperties': false,
+    },
     this.outputSchema = const <String, Object?>{'type': 'object'},
-    Future<ToolResult> Function(ToolContext ctx, Map<String, Object?> args)? handler,
+    Future<ToolResult> Function(ToolContext ctx, Map<String, Object?> args)?
+    handler,
   }) : _handler = handler;
 
   @override
@@ -26,24 +29,33 @@ class FakeTool implements AgentTool {
   final Map<String, Object?> inputSchema;
   @override
   final Map<String, Object?> outputSchema;
-  final Future<ToolResult> Function(ToolContext ctx, Map<String, Object?> args)? _handler;
+  final Future<ToolResult> Function(ToolContext ctx, Map<String, Object?> args)?
+  _handler;
 
   int calls = 0;
   List<Map<String, Object?>> receivedArgs = <Map<String, Object?>>[];
 
   @override
-  Future<ToolResult> execute(ToolContext context, Map<String, Object?> arguments) async {
+  Future<ToolResult> execute(
+    ToolContext context,
+    Map<String, Object?> arguments,
+  ) async {
     calls++;
     receivedArgs.add(arguments);
     final h = _handler;
     if (h != null) return h(context, arguments);
-    return ToolResult(success: true, data: <String, Object?>{'ok': true, 'name': name, 'args': arguments});
+    return ToolResult(
+      success: true,
+      data: <String, Object?>{'ok': true, 'name': name, 'args': arguments},
+    );
   }
 }
 
 class FakeToolExecutor implements ToolCallExecutor {
   FakeToolExecutor([List<AgentTool> tools = const []]) {
-    for (final t in tools) register(t);
+    for (final t in tools) {
+      register(t);
+    }
   }
   final Map<String, AgentTool> _tools = <String, AgentTool>{};
   void register(AgentTool tool) => _tools[tool.name] = tool;

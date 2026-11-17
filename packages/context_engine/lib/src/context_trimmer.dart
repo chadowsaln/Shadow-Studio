@@ -19,7 +19,7 @@ class ContextTrimmer {
     required Map<String, Object?> timelineStructure,
     required List<Map<String, Object?>> availableEditingTools,
     required Map<String, Object?> environmentCapabilities,
-    required Map<String, Object?>> currentTaskProgressList,
+    required List<Map<String, Object?>> currentTaskProgressList,
     required List<Map<String, Object?>> previousToolExecutionResults,
     required List<Map<String, Object?>> relevantMemorySummaries,
     int? tokenBudget,
@@ -28,7 +28,9 @@ class ContextTrimmer {
     final truncated = <String>[];
 
     // Work on mutable copies (oldest-first tool results assumed; we drop from front).
-    var toolResults = List<Map<String, Object?>>.from(previousToolExecutionResults);
+    var toolResults = List<Map<String, Object?>>.from(
+      previousToolExecutionResults,
+    );
     var memories = List<Map<String, Object?>>.from(relevantMemorySummaries);
     var media = List<Map<String, Object?>>.from(mediaAssets);
     var timeline = Map<String, Object?>.from(timelineStructure);
@@ -37,18 +39,18 @@ class ContextTrimmer {
         : Map<String, Object?>.from(currentTaskProgressList.last);
 
     int total() => estimateTokens(<String, Object?>{
-          'p': projectId,
-          'r': projectRevision,
-          'w': workspaceRoot,
-          'm': media,
-          's': selectedTimelineClipIds,
-          't': timeline,
-          'a': availableEditingTools,
-          'e': environmentCapabilities,
-          'g': progress,
-          'o': toolResults,
-          'mem': memories,
-        });
+      'p': projectId,
+      'r': projectRevision,
+      'w': workspaceRoot,
+      'm': media,
+      's': selectedTimelineClipIds,
+      't': timeline,
+      'a': availableEditingTools,
+      'e': environmentCapabilities,
+      'g': progress,
+      'o': toolResults,
+      'mem': memories,
+    });
 
     // 1) Drop oldest tool results first (before important project context).
     while (total() > budget && toolResults.isNotEmpty) {
@@ -127,7 +129,8 @@ class ContextTrimmer {
     return maxIdx;
   }
 
-  Map<String, Object?> _minimalMedia(Map<String, Object?> m) => <String, Object?>{
+  Map<String, Object?> _minimalMedia(Map<String, Object?> m) =>
+      <String, Object?>{
         if (m['id'] != null) 'id': m['id'],
         if (m['name'] != null) 'name': m['name'],
         if (m['kind'] != null) 'kind': m['kind'],
@@ -136,13 +139,19 @@ class ContextTrimmer {
       };
 
   bool _isMinimalMedia(Map<String, Object?> m) => m.keys.every(
-        (k) => const {'id', 'name', 'kind', 'durationMs', 'keyframes'}.contains(k),
-      );
+    (k) => const {'id', 'name', 'kind', 'durationMs', 'keyframes'}.contains(k),
+  );
 
   Map<String, Object?> _trimTimeline(Map<String, Object?> t) {
     final out = <String, Object?>{};
     // keep structural counts/ids if present
-    for (final key in ['tracks', 'trackCount', 'clipCount', 'selected', 'durationTicks']) {
+    for (final key in [
+      'tracks',
+      'trackCount',
+      'clipCount',
+      'selected',
+      'durationTicks',
+    ]) {
       if (t.containsKey(key)) out[key] = t[key];
     }
     if (out.isEmpty) {

@@ -363,17 +363,10 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
-  shadow_agent_runtime:
+  shadow_permissions:
     dependency: transitive
     description:
-      path: "packages/agent_runtime"
-      relative: true
-    source: path
-    version: "0.1.0"
-  shadow_contracts:
-    dependency: transitive
-    description:
-      path: "packages/contracts"
+      path: "packages/permissions"
       relative: true
     source: path
     version: "0.1.0"

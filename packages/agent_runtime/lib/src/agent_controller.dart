@@ -4,10 +4,12 @@ import 'package:meta/meta.dart';
 import 'package:shadow_contracts/shadow_contracts.dart';
 
 import 'agent_context.dart';
+import 'package:shadow_context_engine/context_engine.dart';
+
+import 'agent_context_assembler.dart';
 import 'agent_events.dart';
 import 'agent_limits.dart';
 import 'execution_loop.dart';
-import 'planner.dart';
 import 'recovery_manager.dart';
 import 'task_scheduler.dart';
 
@@ -80,19 +82,25 @@ class AgentController {
     AgentRuntimeLimits limits = const AgentRuntimeLimits(),
     AuditSink? audit,
     ApprovalGate? approvalGate,
-  })  : _brain = brain,
-        _toolExecutor = toolExecutor,
-        _recoveryManager = recoveryManager ?? RecoveryManager(),
-        _scheduler = scheduler ?? TaskScheduler(),
-        _limits = limits,
-        _audit = audit ?? _NoopAuditSink(),
-        _approvalGate = approvalGate {
+    AgentContextAssembler? contextAssembler,
+    AgentContextHolder? contextHolder,
+  }) : _brain = brain,
+       _toolExecutor = toolExecutor,
+       _recoveryManager = recoveryManager ?? RecoveryManager(),
+       _scheduler = scheduler ?? TaskScheduler(),
+       _limits = limits,
+       _audit = audit ?? _NoopAuditSink(),
+       _approvalGate = approvalGate,
+       _contextAssembler = contextAssembler ?? AgentContextAssembler(),
+       _contextHolder = contextHolder ?? AgentContextHolder() {
     _loop = ExecutionLoop(
       limits: _limits,
       brain: _brain,
       toolExecutor: _toolExecutor,
       recoveryManager: _recoveryManager,
       approvalGate: _approvalGate,
+      contextAssembler: _contextAssembler,
+      contextHolder: _contextHolder,
       emit: _handleLoopEvent,
     );
   }
@@ -104,6 +112,8 @@ class AgentController {
   final AgentRuntimeLimits _limits;
   final AuditSink _audit;
   final ApprovalGate? _approvalGate;
+  final AgentContextHolder _contextHolder;
+  final AgentContextAssembler _contextAssembler;
   late final ExecutionLoop _loop;
 
   final StreamController<AgentRuntimeEvent> _events =
@@ -117,6 +127,12 @@ class AgentController {
   RecoveryManager get recoveryManager => _recoveryManager;
   AgentRuntimeLimits get limits => _limits;
 
+  /// Context snapshot of the most recent task turn, or null before any tool ran.
+  ContextSnapshot? get contextSnapshot => _contextHolder.snapshot;
+
+  /// The live holder, for layers that need to read the snapshot per turn.
+  AgentContextHolder get contextHolder => _contextHolder;
+
   ManagedTask? task(String id) => _tasks[id];
   List<ManagedTask> get tasks => List<ManagedTask>.unmodifiable(_tasks.values);
 
@@ -124,6 +140,7 @@ class AgentController {
     required String request,
     required String workspaceRoot,
     required int projectRevision,
+    Map<String, Object?> metadata = const <String, Object?>{},
     String? taskId,
   }) {
     final id = taskId ?? _nextId();
@@ -131,6 +148,7 @@ class AgentController {
       taskId: id,
       workspaceRoot: workspaceRoot,
       projectRevision: projectRevision,
+      metadata: metadata,
     );
     final managed = ManagedTask(
       id: id,
@@ -166,14 +184,17 @@ class AgentController {
     final token = CancellationToken();
     _tokens[taskId] = token;
 
+    _contextHolder.snapshot = null;
     _setState(taskId, ManagedTaskState.planning);
-    _emit(TaskStarted(
-      taskId: taskId,
-      timestamp: DateTime.now().toUtc(),
-      request: managed.request,
-      workspaceRoot: managed.context.workspaceRoot,
-      projectRevision: managed.context.projectRevision,
-    ));
+    _emit(
+      TaskStarted(
+        taskId: taskId,
+        timestamp: DateTime.now().toUtc(),
+        request: managed.request,
+        workspaceRoot: managed.context.workspaceRoot,
+        projectRevision: managed.context.projectRevision,
+      ),
+    );
 
     _setState(taskId, ManagedTaskState.acting);
     final outcome = await _loop.run(
@@ -189,17 +210,28 @@ class AgentController {
         _setState(taskId, ManagedTaskState.succeeded, summary: outcome.summary);
         break;
       case AgentTaskState.failed:
-        _setState(taskId, ManagedTaskState.failed,
-            errorCode: outcome.errorCode, errorMessage: outcome.errorMessage);
+        _setState(
+          taskId,
+          ManagedTaskState.failed,
+          errorCode: outcome.errorCode,
+          errorMessage: outcome.errorMessage,
+        );
         break;
       case AgentTaskState.cancelled:
-        _setState(taskId, ManagedTaskState.cancelled,
-            errorMessage: outcome.errorMessage);
+        _setState(
+          taskId,
+          ManagedTaskState.cancelled,
+          errorMessage: outcome.errorMessage,
+        );
         // ensure cancelled event emitted if loop didn't
         break;
       default:
-        _setState(taskId, ManagedTaskState.failed,
-            errorCode: ShadowErrorCode.toolFailed, errorMessage: 'Unexpected terminal state');
+        _setState(
+          taskId,
+          ManagedTaskState.failed,
+          errorCode: ShadowErrorCode.toolFailed,
+          errorMessage: 'Unexpected terminal state',
+        );
     }
 
     _tokens.remove(taskId);
@@ -213,7 +245,13 @@ class AgentController {
     token?.cancel(reason ?? 'cancelled');
     if (found && _tasks[taskId]?.state == ManagedTaskState.queued) {
       _setState(taskId, ManagedTaskState.cancelled, errorMessage: reason);
-      _emit(TaskCancelled(taskId: taskId, timestamp: DateTime.now().toUtc(), reason: reason));
+      _emit(
+        TaskCancelled(
+          taskId: taskId,
+          timestamp: DateTime.now().toUtc(),
+          reason: reason,
+        ),
+      );
     }
   }
 
@@ -263,14 +301,17 @@ class AgentController {
       _setState(event.taskId, ManagedTaskState.awaitingApproval);
     } else if (event is ToolExecutionStarted || event is StepStarted) {
       final current = _tasks[event.taskId];
-      if (current != null && current.state == ManagedTaskState.awaitingApproval) {
+      if (current != null &&
+          current.state == ManagedTaskState.awaitingApproval) {
         _setState(event.taskId, ManagedTaskState.acting);
       }
     }
     if (event is PlanUpdated) {
       final current = _tasks[event.taskId];
       if (current != null) {
-        _tasks[event.taskId] = current.copyWith(plan: AgentPlan(steps: event.steps, revision: event.revision));
+        _tasks[event.taskId] = current.copyWith(
+          plan: AgentPlan(steps: event.steps, revision: event.revision),
+        );
       }
     }
     _emit(event);
@@ -297,7 +338,8 @@ class AgentController {
     if (!_events.isClosed) _events.add(event);
   }
 
-  String _nextId() => 'task_${DateTime.now().microsecondsSinceEpoch}_${++_idSeq}';
+  String _nextId() =>
+      'task_${DateTime.now().microsecondsSinceEpoch}_${++_idSeq}';
 
   Future<void> dispose() async {
     for (final t in _tokens.values) {

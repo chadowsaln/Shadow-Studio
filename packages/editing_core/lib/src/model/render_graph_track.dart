@@ -57,7 +57,7 @@ class RenderGraphTrack {
           audioClips?.map((c) => c.toJson()).toList() ?? const [];
     } else if (kind == TrackKind.overlay) {
       map['text_layers'] =
-          textLayers?.map((t) => t.toJson()).toList() ?? const [];
+          textLayers?.map((t) => t.toRenderGraphJson()).toList() ?? const [];
     }
 
     return map;
@@ -70,7 +70,8 @@ class RenderGraphTrack {
     if (json.containsKey('clips') && json['clips'] != null) {
       final raw = json['clips'] as List<dynamic>;
       clips = raw
-          .map((c) => RenderGraphVideoClip.fromJson((c as Map).cast<String, Object?>()))
+          .map((c) =>
+              RenderGraphVideoClip.fromJson((c as Map).cast<String, Object?>()))
           .toList();
     }
 
@@ -78,7 +79,8 @@ class RenderGraphTrack {
     if (json.containsKey('audio_clips') && json['audio_clips'] != null) {
       final raw = json['audio_clips'] as List<dynamic>;
       audioClips = raw
-          .map((c) => RenderGraphAudioClip.fromJson((c as Map).cast<String, Object?>()))
+          .map((c) =>
+              RenderGraphAudioClip.fromJson((c as Map).cast<String, Object?>()))
           .toList();
     }
 

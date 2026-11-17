@@ -1,18 +1,30 @@
 import 'package:shadow_contracts/shadow_contracts.dart';
 
-import 'schema_validator.dart';
-
 class ToolRegistry {
-  ToolRegistry({ToolSchemaValidator? schemaValidator}) : _schemaValidator = schemaValidator ?? const ToolSchemaValidator();
+  ToolRegistry({ToolSchemaValidator? schemaValidator})
+    : _schemaValidator = schemaValidator ?? const ToolSchemaValidator(),
+      _contractValidator = const ToolContractValidator();
 
   final Map<String, AgentTool> _tools = <String, AgentTool>{};
   final ToolSchemaValidator _schemaValidator;
+  final ToolContractValidator _contractValidator;
 
   void register(AgentTool tool) {
     if (_tools.containsKey(tool.name)) {
       throw StateError('${ShadowErrorCode.toolDuplicateName}: ${tool.name}');
     }
-    _validateToolDefinition(tool);
+    final errors = _contractValidator.validateDefinition(tool);
+    if (errors.isNotEmpty) {
+      throw StateError(
+        '${ShadowErrorCode.toolSchemaInvalid}: ${tool.name}: ${errors.join('; ')}',
+      );
+    }
+    // Ensure the declared input schema can validate an empty argument map when
+    // no required fields are declared. This catches malformed schemas early.
+    _schemaValidator.validate(
+      schema: tool.inputSchema,
+      arguments: const <String, Object?>{},
+    );
     _tools[tool.name] = tool;
   }
 
@@ -21,23 +33,4 @@ class ToolRegistry {
   bool contains(String name) => _tools.containsKey(name);
 
   List<AgentTool> get all => List<AgentTool>.unmodifiable(_tools.values);
-
-  void _validateToolDefinition(AgentTool tool) {
-    final schema = tool.inputSchema;
-    // basic structural sanity for closed object schema
-    if (schema.isEmpty) {
-      throw StateError('${ShadowErrorCode.toolSchemaInvalid}: ${tool.name} empty schema');
-    }
-    final type = schema['type'];
-    if (type != 'object') {
-      throw StateError('${ShadowErrorCode.toolSchemaInvalid}: ${tool.name} root must be object');
-    }
-    // enforce closed schema declaration
-    if (schema['additionalProperties'] != false) {
-      // allow explicit false only for MVP safety; treat missing as invalid
-      // but be tolerant if properties absent? spec says reject additional JSON properties
-    }
-    // ensure validator can run on empty args if no required
-    _schemaValidator.validate(schema: schema, arguments: const <String, Object?>{});
-  }
 }

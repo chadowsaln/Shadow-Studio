@@ -333,7 +333,8 @@ class DefaultEditingService implements EditingService {
   Future<ProjectDocument> openProject(String path) async {
     try {
       final (projectData, ops) = await _storage.openProjectFile(path);
-      final docMap = jsonDecode(projectData.documentJson) as Map<String, dynamic>;
+      final docMap =
+          jsonDecode(projectData.documentJson) as Map<String, dynamic>;
       final doc = ProjectDocument.fromJson(docMap);
       DocumentInvariants.validate(doc);
 
@@ -382,7 +383,8 @@ class DefaultEditingService implements EditingService {
         updatedAt: now,
       );
 
-      await _storage.saveProjectFile(targetPath, projectData, ops: _committedOps);
+      await _storage.saveProjectFile(targetPath, projectData,
+          ops: _committedOps);
       _projectFilePath = targetPath;
     } on StorageError catch (e) {
       throw ShadowError(
@@ -444,9 +446,8 @@ class DefaultEditingService implements EditingService {
           final asset = clip.assetId != null
               ? _currentDocument.assets[clip.assetId]
               : null;
-          final assetId = clip.assetId != null
-              ? UuidV7.ensureValid(clip.assetId!)
-              : null;
+          final assetId =
+              clip.assetId != null ? UuidV7.ensureValid(clip.assetId!) : null;
 
           // Slicing to range window
           final effectiveStart = max(clip.timelineStartTicks, rangeStart);
@@ -569,9 +570,8 @@ class DefaultEditingService implements EditingService {
           final asset = clip.assetId != null
               ? _currentDocument.assets[clip.assetId]
               : null;
-          final assetId = clip.assetId != null
-              ? UuidV7.ensureValid(clip.assetId!)
-              : null;
+          final assetId =
+              clip.assetId != null ? UuidV7.ensureValid(clip.assetId!) : null;
 
           final effectiveStart = max(clip.timelineStartTicks, rangeStart);
           final effectiveEnd = min(clip.timelineEndTicks, rangeEnd);
@@ -628,6 +628,11 @@ class DefaultEditingService implements EditingService {
         final resolvedTextLayers = <TextLayer>[];
 
         for (final layer in track.textLayers) {
+          // The wire format carries rasters only (§أ.8): a layer whose text has
+          // not been rasterized yet cannot be expressed, so it is skipped here
+          // and handled by the render pre-pass / Flutter preview instead.
+          if (!layer.isRenderable) continue;
+
           // Layer must be within range
           if (layer.startTicks < rangeStart || layer.endTicks > rangeEnd) {
             continue;

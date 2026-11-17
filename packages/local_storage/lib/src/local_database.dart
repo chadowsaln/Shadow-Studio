@@ -37,7 +37,40 @@ class LocalDatabase {
     return instance;
   }
 
-  static const int _latestVersion = 1;
+  static const int _latestVersion = 2;
+
+  /// Schema version currently applied to this database.
+  int get schemaVersion => _db
+      .select('SELECT COALESCE(MAX(version),0) AS v FROM schema_migrations')
+      .first['v'] as int;
+
+  /// Runs [action] inside an IMMEDIATE transaction, rolling back on error.
+  ///
+  /// Use this for multi-row invariants such as writing a timeline and bumping
+  /// the owning project revision.
+  T transaction<T>(T Function() action) {
+    _db.execute('BEGIN IMMEDIATE;');
+    try {
+      final result = action();
+      _db.execute('COMMIT;');
+      return result;
+    } catch (error) {
+      try {
+        _db.execute('ROLLBACK;');
+      } catch (_) {
+        // Ignore rollback failures; the original error is more useful.
+      }
+      rethrow;
+    }
+  }
+
+  /// Returns true when SQLite's `PRAGMA integrity_check` reports no problems.
+  bool integrityCheck() {
+    final rows = _db.select('PRAGMA integrity_check;');
+    if (rows.isEmpty) return false;
+    final first = rows.first.values.first;
+    return first is String && first.toLowerCase() == 'ok';
+  }
 
   void _migrate() {
     _db.execute('''
@@ -46,10 +79,12 @@ class LocalDatabase {
         applied_at INTEGER NOT NULL
       );
     ''');
-    final row = _db.select('SELECT COALESCE(MAX(version),0) AS v FROM schema_migrations');
+    final row = _db
+        .select('SELECT COALESCE(MAX(version),0) AS v FROM schema_migrations');
     var current = row.first['v'] as int;
     final migrations = <int, List<String>>{
       1: _migration1,
+      2: _migration2,
     };
     while (current < _latestVersion) {
       final next = current + 1;
@@ -60,7 +95,16 @@ class LocalDatabase {
         for (final s in stmts) {
           _db.execute(s);
         }
-        _db.execute('INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?);', [next, DateTime.now().millisecondsSinceEpoch]);
+        if (next == 2) {
+          _ensureColumn(
+            'provider_configs',
+            'enabled',
+            'INTEGER NOT NULL DEFAULT 1',
+          );
+        }
+        _db.execute(
+            'INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?);',
+            [next, DateTime.now().millisecondsSinceEpoch]);
         _db.execute('COMMIT;');
         current = next;
       } catch (e) {
@@ -201,6 +245,112 @@ class LocalDatabase {
     );
     ''',
   ];
+
+  static const List<String> _migration2 = <String>[
+    '''
+    CREATE TABLE IF NOT EXISTS projects (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      workspace_root TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      project_revision INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      deleted_at INTEGER
+    );
+    ''',
+    'CREATE INDEX IF NOT EXISTS idx_projects_updated ON projects(updated_at DESC);',
+    'CREATE INDEX IF NOT EXISTS idx_projects_workspace ON projects(workspace_root);',
+    '''
+    CREATE TABLE IF NOT EXISTS media_assets (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      path TEXT NOT NULL,
+      mime_type TEXT,
+      duration_ms INTEGER,
+      width INTEGER,
+      height INTEGER,
+      frame_rate REAL,
+      thumbnail_path TEXT,
+      checksum TEXT,
+      metadata TEXT NOT NULL DEFAULT '{}',
+      created_at INTEGER NOT NULL,
+      FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+    );
+    ''',
+    'CREATE INDEX IF NOT EXISTS idx_media_assets_project ON media_assets(project_id, created_at DESC);',
+    'CREATE INDEX IF NOT EXISTS idx_media_assets_path ON media_assets(path);',
+    '''
+    CREATE TABLE IF NOT EXISTS timelines (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      revision INTEGER NOT NULL DEFAULT 0,
+      tracks_json TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+    );
+    ''',
+    'CREATE INDEX IF NOT EXISTS idx_timelines_project ON timelines(project_id, updated_at DESC);',
+    '''
+    CREATE TABLE IF NOT EXISTS execution_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id TEXT,
+      task_id TEXT,
+      level TEXT NOT NULL,
+      event TEXT NOT NULL,
+      message TEXT NOT NULL,
+      correlation_id TEXT,
+      metadata TEXT NOT NULL DEFAULT '{}',
+      created_at INTEGER NOT NULL
+    );
+    ''',
+    'CREATE INDEX IF NOT EXISTS idx_execution_logs_session ON execution_logs(session_id, created_at DESC);',
+    'CREATE INDEX IF NOT EXISTS idx_execution_logs_task ON execution_logs(task_id, created_at DESC);',
+    '''
+    CREATE TABLE IF NOT EXISTS permission_decisions (
+      id TEXT PRIMARY KEY,
+      task_id TEXT,
+      session_id TEXT,
+      tool_name TEXT NOT NULL,
+      action TEXT NOT NULL,
+      status TEXT NOT NULL,
+      scope TEXT,
+      created_by TEXT,
+      reason TEXT,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER,
+      resolved_at INTEGER
+    );
+    ''',
+    'CREATE INDEX IF NOT EXISTS idx_permission_decisions_task ON permission_decisions(task_id);',
+    'CREATE INDEX IF NOT EXISTS idx_permission_decisions_status ON permission_decisions(status, expires_at);',
+    '''
+    CREATE TABLE IF NOT EXISTS provider_configs (
+      id TEXT PRIMARY KEY,
+      provider TEXT NOT NULL,
+      model TEXT,
+      base_url TEXT,
+      api_key_ref TEXT,
+      metadata TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    ''',
+  ];
+
+  /// Adds [column] to [table] when absent. Used for forward-compatible column
+  /// additions that cannot be expressed as plain SQL.
+  void _ensureColumn(String table, String column, String definition) {
+    final exists = _db
+        .select('PRAGMA table_info($table);')
+        .any((row) => row['name'] == column);
+    if (!exists) {
+      _db.execute('ALTER TABLE $table ADD COLUMN $column $definition;');
+    }
+  }
 
   void close() => _db.close();
 }

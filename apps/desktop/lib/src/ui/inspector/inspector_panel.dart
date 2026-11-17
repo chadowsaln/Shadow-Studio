@@ -1,4 +1,4 @@
-import 'package:editing_core/editing_core.dart';
+import 'package:editing_core/editing_core.dart' hide TextAlign;
 import 'package:flutter/material.dart';
 
 import '../../controller/editor_controller.dart';
@@ -21,7 +21,8 @@ class InspectorPanel extends StatelessWidget {
     // Find selected clip if any
     Clip? selectedClip;
     Track? selectedTrack;
-    if (controller.selectedClipId != null && controller.selectedTrackId != null) {
+    if (controller.selectedClipId != null &&
+        controller.selectedTrackId != null) {
       for (final track in controller.document.tracks) {
         if (track.id == controller.selectedTrackId) {
           selectedTrack = track;
@@ -55,7 +56,8 @@ class InspectorPanel extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   selectedClip != null ? 'Clip Inspector' : 'Project Settings',
-                  style: ShadowTypography.title.copyWith(color: colors.textPrimary, fontSize: 13),
+                  style: ShadowTypography.title
+                      .copyWith(color: colors.textPrimary, fontSize: 13),
                 ),
               ],
             ),
@@ -72,17 +74,20 @@ class InspectorPanel extends StatelessWidget {
                   const SizedBox(height: 8),
                   _DetailRow(
                     label: 'Timeline Start',
-                    timecode: TimecodeFormatter.format(selectedClip.timelineStartTicks),
+                    timecode: TimecodeFormatter.format(
+                        selectedClip.timelineStartTicks),
                     rawTicks: '${selectedClip.timelineStartTicks}t',
                   ),
                   _DetailRow(
                     label: 'Duration',
-                    timecode: TimecodeFormatter.format(selectedClip.durationTicks),
+                    timecode:
+                        TimecodeFormatter.format(selectedClip.durationTicks),
                     rawTicks: '${selectedClip.durationTicks}t',
                   ),
                   _DetailRow(
                     label: 'Source In',
-                    timecode: TimecodeFormatter.format(selectedClip.sourceInTicks),
+                    timecode:
+                        TimecodeFormatter.format(selectedClip.sourceInTicks),
                     rawTicks: '${selectedClip.sourceInTicks}t',
                   ),
                   const SizedBox(height: 16),
@@ -120,7 +125,8 @@ class InspectorPanel extends StatelessWidget {
                         Expanded(
                           child: Text(
                             'Gaussian Blur',
-                            style: ShadowTypography.body.copyWith(color: colors.textPrimary, fontSize: 12),
+                            style: ShadowTypography.body.copyWith(
+                                color: colors.textPrimary, fontSize: 12),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -139,18 +145,23 @@ class InspectorPanel extends StatelessWidget {
                   // Project Sequence Settings
                   const _SectionHeader(title: 'SEQUENCE PROFILE'),
                   const SizedBox(height: 12),
-                  _DetailRow(label: 'Sequence Name', timecode: controller.document.name),
+                  _DetailRow(
+                      label: 'Sequence Name',
+                      timecode: controller.document.name),
                   _DetailRow(
                     label: 'Resolution',
-                    timecode: '${controller.document.profile.width} x ${controller.document.profile.height}',
+                    timecode:
+                        '${controller.document.profile.width} x ${controller.document.profile.height}',
                   ),
                   _DetailRow(
                     label: 'Timebase',
-                    timecode: '${controller.document.timebase.fpsNum} / ${controller.document.timebase.fpsDen} fps',
+                    timecode:
+                        '${controller.document.timebase.fpsNum} / ${controller.document.timebase.fpsDen} fps',
                   ),
                   _DetailRow(
                     label: 'Audio Profile',
-                    timecode: '${controller.document.timebase.sampleRate} Hz · ${controller.document.timebase.channels} ch',
+                    timecode:
+                        '${controller.document.timebase.sampleRate} Hz · ${controller.document.timebase.channels} ch',
                   ),
                   _DetailRow(
                     label: 'Revision',
@@ -213,7 +224,8 @@ class _DetailRow extends StatelessWidget {
             flex: 2,
             child: Text(
               label,
-              style: ShadowTypography.body.copyWith(color: colors.textSecondary, fontSize: 12),
+              style: ShadowTypography.body
+                  .copyWith(color: colors.textSecondary, fontSize: 12),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -227,7 +239,8 @@ class _DetailRow extends StatelessWidget {
                 Flexible(
                   child: Text(
                     timecode,
-                    style: ShadowTypography.numeric.copyWith(color: colors.textPrimary, fontSize: 12),
+                    style: ShadowTypography.numeric
+                        .copyWith(color: colors.textPrimary, fontSize: 12),
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.end,
                   ),
@@ -236,7 +249,8 @@ class _DetailRow extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     '($rawTicks)',
-                    style: ShadowTypography.numeric.copyWith(color: colors.textMuted, fontSize: 10),
+                    style: ShadowTypography.numeric
+                        .copyWith(color: colors.textMuted, fontSize: 10),
                   ),
                 ],
               ],

@@ -1,6 +1,7 @@
 name: shadow_provider_gateway
 description: Provider-independent AI gateway for Shadow Studio (OpenAI, Gemini, Anthropic, OpenRouter).
 version: 0.1.0
+resolution: workspace
 publish_to: 'none'
 
 environment:
@@ -10,7 +11,9 @@ dependencies:
   meta: ^1.16.0
   shadow_contracts:
     path: ../contracts
+  shadow_permissions:
+    path: ../permissions
 
 dev_dependencies:
-  lints: ^6.0.0
+  lints: ^3.0.0
   test: ^1.25.0

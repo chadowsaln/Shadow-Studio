@@ -117,6 +117,8 @@ class Track {
     List<TextLayer>? textLayers,
     int? gainMb,
     int? panPpm,
+    bool clearGainMb = false,
+    bool clearPanPpm = false,
   }) {
     return Track(
       id: id ?? this.id,
@@ -127,8 +129,8 @@ class Track {
       clips: clips ?? this.clips,
       transitions: transitions ?? this.transitions,
       textLayers: textLayers ?? this.textLayers,
-      gainMb: gainMb ?? this.gainMb,
-      panPpm: panPpm ?? this.panPpm,
+      gainMb: clearGainMb ? null : (gainMb ?? this.gainMb),
+      panPpm: clearPanPpm ? null : (panPpm ?? this.panPpm),
     );
   }
 
@@ -138,8 +140,10 @@ class Track {
         'position': position,
         'name': name,
         'enabled': enabled,
-        if (kind == TrackKind.video) 'clips': clips.map((c) => c.toJson()).toList(),
-        if (kind == TrackKind.audio) 'audio_clips': clips.map((c) => c.toJson()).toList(),
+        if (kind == TrackKind.video)
+          'clips': clips.map((c) => c.toJson()).toList(),
+        if (kind == TrackKind.audio)
+          'audio_clips': clips.map((c) => c.toJson()).toList(),
         if (kind == TrackKind.overlay)
           'text_layers': textLayers.map((t) => t.toJson()).toList(),
         if (kind == TrackKind.video && transitions.isNotEmpty)
@@ -195,7 +199,8 @@ class Track {
           gainMb == other.gainMb &&
           panPpm == other.panPpm &&
           const ListEquality<Clip>().equals(clips, other.clips) &&
-          const ListEquality<Transition>().equals(transitions, other.transitions) &&
+          const ListEquality<Transition>()
+              .equals(transitions, other.transitions) &&
           const ListEquality<TextLayer>().equals(textLayers, other.textLayers);
 
   @override
