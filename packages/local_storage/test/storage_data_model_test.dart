@@ -25,8 +25,8 @@ void main() {
 
     DateTime ts(int minute) => DateTime.utc(2026, 1, 1, 0, minute);
 
-    test('schema is migrated to version 2 with all required tables', () {
-      expect(db.schemaVersion, 2);
+    test('schema is migrated to version 3 with all required tables', () {
+      expect(db.schemaVersion, 3);
       final names = db.raw
           .select("SELECT name FROM sqlite_master WHERE type='table'")
           .map((r) => r['name'] as String)
@@ -330,7 +330,7 @@ void main() {
       db = LocalDatabase.open('${tempDir.path}/shadow.sqlite');
       repos = StorageRepositories(db);
       expect(repos.projects.get('persist-1')!.name, 'Persisted');
-      expect(db.schemaVersion, 2);
+      expect(db.schemaVersion, 3);
       expect(db.integrityCheck(), isTrue);
     });
 
@@ -365,7 +365,7 @@ void main() {
 
       db = LocalDatabase.open(path);
       repos = StorageRepositories(db);
-      expect(db.schemaVersion, 2);
+      expect(db.schemaVersion, 3);
       final row = db.raw.select('SELECT * FROM session_memory').first;
       expect(row['content'], 'legacy row');
       final columns = db.raw

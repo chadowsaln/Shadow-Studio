@@ -26,6 +26,7 @@ class TaskScheduler {
   final Set<String> _cancelled = <String>{};
   final StreamController<ScheduledTask?> _activeController =
       StreamController<ScheduledTask?>.broadcast();
+  bool _disposed = false;
 
   ScheduledTask? get active => _active;
   List<ScheduledTask> get pending => List<ScheduledTask>.unmodifiable(_queue);
@@ -72,7 +73,7 @@ class TaskScheduler {
     if (_active?.id != taskId) return;
     _active = null;
     _cancelled.remove(taskId);
-    _activeController.add(null);
+    _emitActive(null);
     _pump();
   }
 
@@ -84,12 +85,19 @@ class TaskScheduler {
         continue; // dropped cancelled queued task
       }
       _active = next;
-      _activeController.add(next);
+      _emitActive(next);
       return;
     }
   }
 
+  void _emitActive(ScheduledTask? task) {
+    if (!_disposed && !_activeController.isClosed) {
+      _activeController.add(task);
+    }
+  }
+
   Future<void> dispose() async {
+    _disposed = true;
     await _activeController.close();
   }
 }

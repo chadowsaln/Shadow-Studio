@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:editing_core/editing_core.dart' as core;
 import 'package:media_core/media_core.dart';
+import 'package:render_pipeline/render_pipeline.dart';
 import 'package:shadow_agent_runtime/agent_runtime.dart';
 import 'package:shadow_contracts/shadow_contracts.dart';
 import 'package:shadow_permissions/permissions.dart' as permissions;
@@ -16,9 +17,10 @@ import 'package:test/test.dart';
 ///
 /// Everything is real: ffmpeg/ffprobe inspect a generated 30s source, the real
 /// tool registry validates arguments and permissions, the timeline is edited
-/// through the Editing Core, and the provider is a scripted [MockProvider]
-/// (no network, no keys). The deliverable is the editable timeline plus a
-/// verified project revision; rendering an MP4 is not part of this scenario.
+/// through the Editing Core, the provider is a scripted [MockProvider]
+/// (no network, no keys), and the final timeline is encoded to an MP4 through
+/// [ProcessRenderBackend] and verified with ffprobe. The deliverable is an
+/// editable 30 second timeline plus a valid video file.
 class _ToolExecutorAdapter implements ToolCallExecutor {
   _ToolExecutorAdapter(this._executor, this._registry);
 
@@ -121,16 +123,25 @@ void main() {
       'lavfi',
       '-i',
       'smptehdbars=size=640x360:rate=30:duration=15',
+      '-f',
+      'lavfi',
+      '-i',
+      'sine=frequency=440:sample_rate=48000:duration=30',
       '-filter_complex',
       '[0:v][1:v]concat=n=2:v=1:a=0[v]',
       '-map',
       '[v]',
+      '-map',
+      '2:a',
       '-pix_fmt',
       'yuv420p',
       '-c:v',
       'libx264',
       '-preset',
       'ultrafast',
+      '-c:a',
+      'aac',
+      '-shortest',
       sourcePath,
     ]);
     if (generated.exitCode != 0) {
@@ -153,6 +164,9 @@ void main() {
 
     final worker = FfmpegMediaWorker();
     final assetId = core.UuidV7.generate();
+    final audioAssetId = core.UuidV7.generate();
+    final videoTrackId = core.UuidV7.generate();
+    final audioTrackId = core.UuidV7.generate();
     final assetHash = await worker.computeBlake3(sourcePath);
 
     final coreService = core.DefaultEditingService(
@@ -162,16 +176,38 @@ void main() {
         timebase: core.Timebase.fps30(),
         tracks: <core.Track>[
           core.Track(
-            id: 'main',
+            id: videoTrackId,
             kind: core.TrackKind.video,
             position: 0,
             name: 'Main',
+          ),
+          core.Track(
+            id: audioTrackId,
+            kind: core.TrackKind.audio,
+            position: 1,
+            name: 'Music',
+            clips: <core.Clip>[
+              core.Clip.audio(
+                id: core.UuidV7.generate(),
+                assetId: audioAssetId,
+                timelineStartTicks: 0,
+                durationTicks: durationTicks30s,
+                label: 'music',
+              ),
+            ],
           ),
         ],
         assets: <String, core.Asset>{
           assetId: core.Asset(
             id: assetId,
             kind: core.AssetKind.video,
+            uri: sourcePath,
+            durationTicks: durationTicks30s,
+            hash: assetHash,
+          ),
+          audioAssetId: core.Asset(
+            id: audioAssetId,
+            kind: core.AssetKind.audio,
             uri: sourcePath,
             durationTicks: durationTicks30s,
             hash: assetHash,
@@ -226,7 +262,7 @@ void main() {
             'operations': <Object?>[
               <String, Object?>{
                 'type': 'add_clip',
-                'target': 'main',
+                'target': videoTrackId,
                 'payload': <String, Object?>{
                   'kind': 'video',
                   'assetId': assetId,
@@ -237,7 +273,7 @@ void main() {
               },
               <String, Object?>{
                 'type': 'add_clip',
-                'target': 'main',
+                'target': videoTrackId,
                 'payload': <String, Object?>{
                   'kind': 'video',
                   'assetId': assetId,
@@ -318,12 +354,130 @@ void main() {
 
     // The deliverable is a real 30 second timeline at revision 1.
     expect(coreService.revision, 1);
-    final clips = coreService.currentDocument.tracks.single.clips;
+    final videoTrack = coreService.currentDocument.tracks.firstWhere(
+      (t) => t.id == videoTrackId,
+    );
+    final clips = videoTrack.clips;
     expect(clips, hasLength(2));
     expect(coreService.currentDocument.durationTicks, durationTicks30s);
     expect(clips.first.timelineStartTicks, 0);
     expect(clips.last.timelineStartTicks, durationTicks30s ~/ 2);
-  }, timeout: const Timeout(Duration(minutes: 2)));
+
+    // Resolve the edited timeline through the real RenderGraph contract and
+    // encode it with the production FFmpeg backend (no fake renderer).
+    final graph = coreService.resolveGraph(
+      revision: coreService.revision,
+      range: core.RangeTicks(startTicks: 0, durationTicks: durationTicks30s),
+    );
+    final graphDoc = RenderGraphDoc.parse(graph.toJson());
+    final outputPath = '${workspace.path}/ad_30s.mp4';
+    final queue = RenderQueue(backend: ProcessRenderBackend());
+    addTearDown(queue.dispose);
+    final job = queue.enqueue(
+      graphDoc,
+      preset: RenderPreset.mp4H264720p,
+      outputUri: outputPath,
+    );
+    await queue.drain();
+
+    expect(
+      queue.jobById(job.id)!.state,
+      RenderJobState.succeeded,
+      reason: queue.jobById(job.id)!.error,
+    );
+    final output = File(outputPath);
+    expect(output.existsSync(), isTrue);
+    expect(output.lengthSync(), greaterThan(100000));
+    expect(File('${workspace.path}/ad_30s.part.mp4').existsSync(), isFalse);
+
+    final probe = Process.runSync('ffprobe', <String>[
+      '-v',
+      'error',
+      '-print_format',
+      'json',
+      '-show_format',
+      '-show_streams',
+      outputPath,
+    ]);
+    expect(probe.exitCode, 0, reason: probe.stderr.toString());
+    final probed = jsonDecode(probe.stdout.toString()) as Map<String, Object?>;
+    final streams = (probed['streams'] as List<Object?>)
+        .cast<Map<String, Object?>>();
+    final video = streams.firstWhere((s) => s['codec_type'] == 'video');
+    final audio = streams.firstWhere((s) => s['codec_type'] == 'audio');
+    expect(video['codec_name'], 'h264');
+    expect(video['width'], 1280);
+    expect(video['height'], 720);
+    expect(audio['codec_name'], 'aac');
+    final duration = double.parse(
+      (probed['format'] as Map)['duration'] as String,
+    );
+    expect(duration, closeTo(30.0, 0.5));
+
+    // Preview path: decode an arbitrary frame from the exported file. The
+    // desktop preview widget itself is still a mock, so this proves the
+    // deliverable is decodable, not that the UI renders decoded frames.
+    final framePath = '${workspace.path}/preview.png';
+    final frame = Process.runSync('ffmpeg', <String>[
+      '-y',
+      '-hide_banner',
+      '-loglevel',
+      'error',
+      '-ss',
+      '5',
+      '-i',
+      outputPath,
+      '-frames:v',
+      '1',
+      framePath,
+    ]);
+    expect(frame.exitCode, 0, reason: frame.stderr.toString());
+    expect(File(framePath).lengthSync(), greaterThan(1000));
+    final frameProbe = Process.runSync('ffprobe', <String>[
+      '-v',
+      'error',
+      '-print_format',
+      'json',
+      '-show_streams',
+      framePath,
+    ]);
+    final frameStream =
+        ((jsonDecode(frameProbe.stdout.toString())
+                    as Map<String, Object?>)['streams']
+                as List<Object?>)
+            .cast<Map<String, Object?>>()
+            .single;
+    expect(frameStream['width'], 1280);
+    expect(frameStream['height'], 720);
+
+    // The exported project remains editable: trim the second clip and verify
+    // the revision advances and the timeline can still resolve a graph.
+    final trim = await coreService.apply(
+      core.EditTransaction.single(
+        core.TrimClipCommand(
+          trackId: videoTrackId,
+          clipId: clips.last.id,
+          newTimelineStartTicks: durationTicks30s ~/ 2,
+          newDurationTicks: (durationTicks30s ~/ 2) - 1000000,
+          newSourceInTicks: durationTicks30s ~/ 2,
+        ),
+      ),
+      expectedRevision: coreService.revision,
+    );
+    expect(trim.isSuccess, isTrue);
+    expect(coreService.revision, 2);
+    final editedGraph = coreService.resolveGraph(
+      revision: coreService.revision,
+      range: core.RangeTicks(
+        startTicks: 0,
+        durationTicks: durationTicks30s - 1000000,
+      ),
+    );
+    expect(
+      RenderGraphDoc.parse(editedGraph.toJson()).durationTicks,
+      durationTicks30s - 1000000,
+    );
+  }, timeout: const Timeout(Duration(minutes: 5)));
 
   test('the same scenario fails loudly when the source is missing', () async {
     if (!_hasFfmpeg()) {

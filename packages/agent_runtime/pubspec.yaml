@@ -9,6 +9,7 @@ environment:
 
 dependencies:
   meta: ^1.16.0
+  path: ^1.9.0
   shadow_context_engine:
     path: ../context_engine
   shadow_contracts:
@@ -18,6 +19,8 @@ dependencies:
 
 dev_dependencies:
   lints: ^3.0.0
+  local_storage:
+    path: ../local_storage
   editing_core:
     path: ../editing_core
   media_core:
@@ -26,4 +29,6 @@ dev_dependencies:
     path: ../permissions
   shadow_tool_system:
     path: ../tool_system
+  render_pipeline:
+    path: ../render_pipeline
   test: ^1.25.0

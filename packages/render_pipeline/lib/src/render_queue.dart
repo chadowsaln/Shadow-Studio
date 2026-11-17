@@ -107,7 +107,7 @@ abstract class RenderBackend {
 
 /// Serial render queue with cooperative cancellation and atomic outputs.
 ///
-/// Each job renders into `<output>.part` and is renamed onto the final path
+/// Each job renders into `<name>.part.<ext>` and is renamed onto the final path
 /// only after the encoder reports success, so a crash can never leave a
 /// half-written file at the requested destination.
 class RenderQueue {
@@ -216,7 +216,7 @@ class RenderQueue {
     _tokens[job.id] = token;
     _replace(index, job.copyWith(state: RenderJobState.running));
 
-    final partPath = '${job.outputUri}.part';
+    final partPath = _partPath(job.outputUri);
     try {
       token.throwIfCancelled();
       await _backend.run(
@@ -249,6 +249,18 @@ class RenderQueue {
     } finally {
       _tokens.remove(job.id);
     }
+  }
+
+  /// Builds a temporary sibling that keeps the final extension.
+  ///
+  /// FFmpeg infers the container from the output extension, so `out.mp4.part`
+  /// cannot be muxed. Inserting `.part` before the extension keeps the writer
+  /// format unambiguous while still reserving the final path until commit.
+  static String _partPath(String outputUri) {
+    final separator = outputUri.lastIndexOf(Platform.pathSeparator);
+    final dot = outputUri.lastIndexOf('.');
+    if (dot <= separator) return '$outputUri.part';
+    return '${outputUri.substring(0, dot)}.part${outputUri.substring(dot)}';
   }
 
   void _commitAtomically(String partPath, String outputUri) {

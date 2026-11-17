@@ -37,7 +37,7 @@ class LocalDatabase {
     return instance;
   }
 
-  static const int _latestVersion = 2;
+  static const int _latestVersion = 3;
 
   /// Schema version currently applied to this database.
   int get schemaVersion => _db
@@ -85,6 +85,7 @@ class LocalDatabase {
     final migrations = <int, List<String>>{
       1: _migration1,
       2: _migration2,
+      3: _migration3,
     };
     while (current < _latestVersion) {
       final next = current + 1;
@@ -101,6 +102,15 @@ class LocalDatabase {
             'enabled',
             'INTEGER NOT NULL DEFAULT 1',
           );
+        }
+        if (next == 3) {
+          for (final entry in _checkpointColumns3.entries) {
+            _ensureColumn(
+              'execution_checkpoints',
+              entry.key,
+              entry.value,
+            );
+          }
         }
         _db.execute(
             'INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?);',
@@ -340,6 +350,62 @@ class LocalDatabase {
     );
     ''',
   ];
+
+  /// Version 3 also handles v1 databases that never had the table at all.
+  static const List<String> _migration3 = <String>[
+    '''
+    CREATE TABLE IF NOT EXISTS execution_checkpoints (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id TEXT NOT NULL,
+      sequence INTEGER NOT NULL,
+      created_at INTEGER NOT NULL,
+      context_hash TEXT NOT NULL,
+      project_revision INTEGER NOT NULL,
+      workspace_root TEXT NOT NULL,
+      plan_json TEXT NOT NULL,
+      tool_call_count INTEGER NOT NULL,
+      pending_step_id TEXT,
+      last_tool_name TEXT,
+      last_tool_idempotent INTEGER,
+      last_tool_arguments_hash TEXT,
+      state TEXT NOT NULL,
+      request TEXT,
+      metadata_json TEXT NOT NULL DEFAULT '{}',
+      last_tool_status TEXT NOT NULL DEFAULT 'none',
+      last_tool_error_code TEXT,
+      last_tool_error_message TEXT,
+      error_code TEXT,
+      error_message TEXT,
+      summary TEXT,
+      resume_count INTEGER NOT NULL DEFAULT 0,
+      partial_artifacts_json TEXT NOT NULL DEFAULT '[]',
+      last_heartbeat_at INTEGER,
+      run_id TEXT,
+      process_id INTEGER,
+      UNIQUE(task_id, sequence),
+      FOREIGN KEY(task_id) REFERENCES agent_tasks(id)
+    );
+    ''',
+    'CREATE INDEX IF NOT EXISTS idx_checkpoints_task ON execution_checkpoints(task_id, sequence DESC);',
+  ];
+
+  /// Version 3: durable recovery metadata on checkpoints. Every column is
+  /// additive with a safe default so v1/v2 databases migrate in place.
+  static const Map<String, String> _checkpointColumns3 = <String, String>{
+    'request': 'TEXT',
+    'metadata_json': "TEXT NOT NULL DEFAULT '{}'",
+    'last_tool_status': "TEXT NOT NULL DEFAULT 'none'",
+    'last_tool_error_code': 'TEXT',
+    'last_tool_error_message': 'TEXT',
+    'error_code': 'TEXT',
+    'error_message': 'TEXT',
+    'summary': 'TEXT',
+    'resume_count': 'INTEGER NOT NULL DEFAULT 0',
+    'partial_artifacts_json': "TEXT NOT NULL DEFAULT '[]'",
+    'last_heartbeat_at': 'INTEGER',
+    'run_id': 'TEXT',
+    'process_id': 'INTEGER',
+  };
 
   /// Adds [column] to [table] when absent. Used for forward-compatible column
   /// additions that cannot be expressed as plain SQL.

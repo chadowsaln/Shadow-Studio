@@ -82,9 +82,9 @@ void main() {
 
     await queue.drain();
 
-    expect(backend.attemptedPaths.single, '$outputPath.part');
+    expect(backend.attemptedPaths.single, '${tempDir.path}/out.part.mp4');
     expect(File(outputPath).existsSync(), isTrue);
-    expect(File('$outputPath.part').existsSync(), isFalse);
+    expect(File('${tempDir.path}/out.part.mp4').existsSync(), isFalse);
     expect(queue.jobById(job.id)!.state, RenderJobState.succeeded);
     expect(queue.jobById(job.id)!.progress, 1.0);
     await queue.dispose();
@@ -127,7 +127,7 @@ void main() {
 
     expect(queue.jobById(job.id)!.state, RenderJobState.failed);
     expect(queue.jobById(job.id)!.error, contains('encoder exploded'));
-    expect(File('$outputPath.part').existsSync(), isFalse);
+    expect(File('${tempDir.path}/out.part.mp4').existsSync(), isFalse);
     expect(File(outputPath).existsSync(), isFalse);
     await queue.dispose();
   });
@@ -164,7 +164,7 @@ void main() {
     await drain;
 
     expect(queue.jobById(job.id)!.state, RenderJobState.cancelled);
-    expect(File('$outputPath.part').existsSync(), isFalse);
+    expect(File('${tempDir.path}/out.part.mp4').existsSync(), isFalse);
     expect(File(outputPath).existsSync(), isFalse);
     await queue.dispose();
   });

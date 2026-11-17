@@ -77,6 +77,7 @@ class ExecutionLoop {
     required AgentContext context,
     required CancellationToken cancel,
     required AuditSink audit,
+    AgentPlan? resumePlan,
   }) async {
     final startedAt = _now();
     var toolCallCount = 0;
@@ -104,13 +105,15 @@ class ExecutionLoop {
     try {
       checkCancellation();
       checkTime();
-      var plan = await brain.plan(request: request, taskId: taskId);
+      var plan =
+          resumePlan ?? await brain.plan(request: request, taskId: taskId);
       emit(
         PlanUpdated(
           taskId: taskId,
           timestamp: _now(),
           steps: plan.steps,
           revision: plan.revision,
+          reason: resumePlan == null ? null : 'recovered',
         ),
       );
 
@@ -340,6 +343,21 @@ class ExecutionLoop {
                 }
               }
 
+              // Mark the tool as in flight *before* executing it. If the
+              // process dies here, recovery sees `started` and refuses to
+              // blindly replay a non-idempotent operation.
+              await recoveryManager.saveBeforeToolCall(
+                taskId: taskId,
+                context: context,
+                plan: plan,
+                toolCallCount: toolCallCount,
+                pendingStepId: step.id,
+                toolName: call.name,
+                toolIdempotent: tool.idempotent,
+                argumentsHash: _argsHash(call.arguments),
+                request: request,
+              );
+
               final result = await _executeWithRetries(
                 taskId: taskId,
                 call: call,
@@ -379,6 +397,11 @@ class ExecutionLoop {
                 toolName: call.name,
                 toolIdempotent: tool.idempotent,
                 argumentsHash: _argsHash(call.arguments),
+                request: request,
+                toolSucceeded: result.success,
+                toolErrorCode: result.errorCode,
+                toolErrorMessage: result.errorMessage,
+                partialArtifacts: _partialArtifacts(result),
               );
 
               emit(
@@ -572,6 +595,21 @@ class ExecutionLoop {
           errorCode: ShadowErrorCode.toolFailed,
           errorMessage: 'Unknown tool failure',
         );
+  }
+
+  /// Tools may report the outputs they wrote even on failure. Those paths are
+  /// persisted so recovery can warn about (or explicitly discard) partial files.
+  static List<String>? _partialArtifacts(ToolResult result) {
+    final raw = result.data['partial_artifacts'];
+    if (raw is List) {
+      final paths = raw.whereType<String>().where((p) => p.isNotEmpty).toList();
+      return paths.isEmpty ? null : paths;
+    }
+    final outputPath = result.data['output_path'];
+    if (!result.success && outputPath is String && outputPath.isNotEmpty) {
+      return <String>[outputPath];
+    }
+    return null;
   }
 
   bool _requiresApproval(AgentTool tool) =>
