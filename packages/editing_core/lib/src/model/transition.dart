@@ -51,6 +51,17 @@ class Transition {
         'to_clip_id': toClipId,
       };
 
+  factory Transition.fromJson(Map<String, Object?> json) {
+    return Transition(
+      id: json['id'] as String,
+      kind: json['kind'] as String,
+      atTicks: json['at_ticks'] as int,
+      durationTicks: json['duration_ticks'] as int,
+      fromClipId: json['from_clip_id'] as String,
+      toClipId: json['to_clip_id'] as String,
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

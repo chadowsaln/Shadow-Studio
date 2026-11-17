@@ -185,7 +185,24 @@ class Clip {
     );
   }
 
-  Map<String, Object?> toJson() => {
+  Map<String, Object?> toJson() {
+    if (kind == ClipKind.audio) {
+      return {
+        'id': id,
+        'asset_id': assetId,
+        'stream_index': streamIndex,
+        'timeline_start_ticks': timelineStartTicks,
+        'duration_ticks': durationTicks,
+        'source_in_ticks': sourceInTicks,
+        'speed_num': speedNum,
+        'speed_den': speedDen,
+        'gain_mb': gainMb,
+        'fade_in_ticks': fadeInTicks,
+        'fade_out_ticks': fadeOutTicks,
+        'enabled': enabled,
+      };
+    } else {
+      return {
         'id': id,
         'asset_id': assetId,
         'kind': kind.wireName,
@@ -194,15 +211,40 @@ class Clip {
         'source_in_ticks': sourceInTicks,
         'speed_num': speedNum,
         'speed_den': speedDen,
+        'opacity_ppm': opacityPpm,
         'enabled': enabled,
         if (label != null) 'label': label,
         'stream_index': streamIndex,
-        'opacity_ppm': opacityPpm,
-        'gain_mb': gainMb,
-        'pan_ppm': panPpm,
-        'fade_in_ticks': fadeInTicks,
-        'fade_out_ticks': fadeOutTicks,
       };
+    }
+  }
+
+  /// Deserializes a [Clip] from a JSON map.
+  factory Clip.fromJson(Map<String, Object?> json) {
+    final rawKind = json['kind'] as String?;
+    final isAudio = rawKind == 'audio' || json.containsKey('gain_mb');
+
+    return Clip(
+      id: json['id'] as String,
+      assetId: json['asset_id'] as String?,
+      kind: isAudio
+          ? ClipKind.audio
+          : (rawKind != null ? ClipKind.fromWireName(rawKind) : ClipKind.video),
+      timelineStartTicks: json['timeline_start_ticks'] as int,
+      durationTicks: json['duration_ticks'] as int,
+      sourceInTicks: (json['source_in_ticks'] as int?) ?? 0,
+      speedNum: (json['speed_num'] as int?) ?? 1,
+      speedDen: (json['speed_den'] as int?) ?? 1,
+      enabled: (json['enabled'] as bool?) ?? true,
+      label: json['label'] as String?,
+      streamIndex: (json['stream_index'] as int?) ?? -1,
+      opacityPpm: (json['opacity_ppm'] as int?) ?? 1000000,
+      gainMb: (json['gain_mb'] as int?) ?? 0,
+      panPpm: (json['pan_ppm'] as int?) ?? 0,
+      fadeInTicks: (json['fade_in_ticks'] as int?) ?? 0,
+      fadeOutTicks: (json['fade_out_ticks'] as int?) ?? 0,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>

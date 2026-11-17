@@ -60,7 +60,7 @@ abstract final class DocumentInvariants {
           violations.add('Clip ${clip.id} has non-positive duration: ${clip.durationTicks}');
         }
 
-        // Clip kinds vs Track kinds
+        // Clip kinds vs Track kinds aligned with rendergraph.schema.json
         if (track.kind == TrackKind.audio && clip.kind != ClipKind.audio) {
           violations.add(
             'Clip ${clip.id} of kind "${clip.kind.name}" placed on audio track ${track.id}',
@@ -68,6 +68,11 @@ abstract final class DocumentInvariants {
         }
         if (track.kind == TrackKind.video && clip.kind == ClipKind.audio) {
           violations.add('Audio clip ${clip.id} placed on video track ${track.id}');
+        }
+        if (track.kind == TrackKind.overlay) {
+          violations.add(
+            'Overlay track ${track.id} can only hold text_layers, not media clips (${clip.id})',
+          );
         }
 
         // Asset bounds and kind matching
@@ -86,17 +91,17 @@ abstract final class DocumentInvariants {
                 );
               }
             } else if (track.kind == TrackKind.audio) {
-              if (asset.kind != AssetKind.audio) {
+              // Audio tracks accept audio assets, or video assets with an audio stream
+              if (asset.kind != AssetKind.audio &&
+                  !(asset.kind == AssetKind.video && clip.streamIndex >= 0)) {
                 violations.add(
-                  'Asset ${asset.id} (${asset.kind.name}) cannot be placed on audio track ${track.id}',
+                  'Asset ${asset.id} (${asset.kind.name}) without audio stream cannot be placed on audio track ${track.id}',
                 );
               }
             } else if (track.kind == TrackKind.overlay) {
-              if (asset.kind != AssetKind.image && asset.kind != AssetKind.video) {
-                violations.add(
-                  'Asset ${asset.id} (${asset.kind.name}) cannot be placed on overlay track ${track.id}',
-                );
-              }
+              violations.add(
+                'Media asset ${asset.id} cannot be placed on overlay track ${track.id}',
+              );
             }
 
             // Clip inside asset bounds

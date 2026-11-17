@@ -81,6 +81,16 @@ class Timebase {
         'channels': channels,
       };
 
+  factory Timebase.fromJson(Map<String, Object?> json) {
+    return Timebase(
+      ticksPerSecond: (json['ticks_per_second'] as int?) ?? standardTicksPerSecond,
+      fpsNum: json['fps_num'] as int,
+      fpsDen: json['fps_den'] as int,
+      sampleRate: (json['sample_rate'] as int?) ?? 48000,
+      channels: (json['channels'] as int?) ?? 2,
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

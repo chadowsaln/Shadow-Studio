@@ -96,6 +96,12 @@ class Track {
     return clips.indexWhere((c) => c.id == clipId);
   }
 
+  /// Clips on video tracks (empty on other track kinds).
+  List<Clip> get videoClips => kind == TrackKind.video ? clips : const [];
+
+  /// Clips on audio tracks (empty on other track kinds).
+  List<Clip> get audioClips => kind == TrackKind.audio ? clips : const [];
+
   Track copyWith({
     String? id,
     TrackKind? kind,
@@ -126,11 +132,42 @@ class Track {
         'position': position,
         'name': name,
         'enabled': enabled,
-        'clips': clips.map((c) => c.toJson()).toList(),
-        'transitions': transitions.map((t) => t.toJson()).toList(),
+        if (kind == TrackKind.video) 'clips': clips.map((c) => c.toJson()).toList(),
+        if (kind == TrackKind.audio) 'audio_clips': clips.map((c) => c.toJson()).toList(),
+        if (kind == TrackKind.overlay) 'text_layers': const <Map<String, Object?>>[],
+        if (kind == TrackKind.video && transitions.isNotEmpty)
+          'transitions': transitions.map((t) => t.toJson()).toList(),
         if (gainMb != null) 'gain_mb': gainMb,
         if (panPpm != null) 'pan_ppm': panPpm,
       };
+
+  /// Deserializes a [Track] from a JSON map.
+  factory Track.fromJson(Map<String, Object?> json) {
+    final kind = TrackKind.fromWireName(json['kind'] as String);
+    final rawClips = (json['clips'] as List<dynamic>?) ??
+        (json['audio_clips'] as List<dynamic>?) ??
+        const [];
+    final clips = rawClips
+        .map((c) => Clip.fromJson((c as Map).cast<String, Object?>()))
+        .toList();
+
+    final rawTransitions = (json['transitions'] as List<dynamic>?) ?? const [];
+    final transitions = rawTransitions
+        .map((t) => Transition.fromJson((t as Map).cast<String, Object?>()))
+        .toList();
+
+    return Track(
+      id: json['id'] as String,
+      kind: kind,
+      position: json['position'] as int,
+      name: json['name'] as String,
+      enabled: (json['enabled'] as bool?) ?? true,
+      clips: clips,
+      transitions: transitions,
+      gainMb: json['gain_mb'] as int?,
+      panPpm: json['pan_ppm'] as int?,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
