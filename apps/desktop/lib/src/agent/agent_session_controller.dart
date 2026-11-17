@@ -78,6 +78,7 @@ class AgentSessionController extends ChangeNotifier {
     ToolRegistry? toolRegistryOverride,
     perm.PermissionManager? permissionManager,
     String? workspaceRootOverride,
+    this.providerTimeout = const Duration(seconds: 30),
   })  : settingsStore = settingsStore ?? AgentSettingsStore(),
         _brainOverride = brainOverride,
         _toolRegistryOverride = toolRegistryOverride,
@@ -92,6 +93,12 @@ class AgentSessionController extends ChangeNotifier {
   final ToolRegistry? _toolRegistryOverride;
   final perm.PermissionManager _permissions;
   final String? _workspaceRootOverride;
+
+  /// Upper bound for a single provider request, from connection to last chunk.
+  ///
+  /// Tests use a short value to exercise the timeout path without waiting for
+  /// a production-sized deadline.
+  final Duration providerTimeout;
 
   AgentSettings? _settings;
   AgentSessionStatus _status = AgentSessionStatus.unconfigured;
@@ -293,6 +300,9 @@ class AgentSessionController extends ChangeNotifier {
             providerId: settings.providerId,
             tools: registry.all,
             context: holder,
+            // The transport owns the hard deadline; the router timer is a
+            // slightly later safety net so a transport timeout wins cleanly.
+            requestTimeout: providerTimeout + const Duration(seconds: 1),
           );
       final agent = AgentController(
         brain: brain,
@@ -381,7 +391,9 @@ class AgentSessionController extends ChangeNotifier {
   }
 
   ProviderRouter _buildRouter(AgentSettings settings) {
-    final transport = HttpClientProviderTransport();
+    final transport = HttpClientProviderTransport(
+      connectionTimeout: providerTimeout,
+    );
     final baseUri =
         settings.baseUri ?? Uri.parse(settings.provider.defaultBaseUri);
     final provider = switch (settings.providerId) {
@@ -389,21 +401,25 @@ class AgentSessionController extends ChangeNotifier {
           transport: transport,
           credentialStore: settingsStore.credentialStore,
           baseUri: baseUri,
+          defaultTimeout: providerTimeout,
         ),
       'gemini' => GeminiAdapter(
           transport: transport,
           credentialStore: settingsStore.credentialStore,
           baseUri: baseUri,
+          defaultTimeout: providerTimeout,
         ),
       'openrouter' => OpenRouterAdapter(
           transport: transport,
           credentialStore: settingsStore.credentialStore,
           baseUri: baseUri,
+          defaultTimeout: providerTimeout,
         ),
       _ => OpenAIAdapter(
           transport: transport,
           credentialStore: settingsStore.credentialStore,
           baseUri: baseUri,
+          defaultTimeout: providerTimeout,
         ),
     };
     return ProviderRouter(
