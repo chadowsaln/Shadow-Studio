@@ -80,3 +80,31 @@ Where the architecture specifications are silent, ambiguous, or allow multiple i
   - **Phase 3 (RenderGraph derivation)**: Add typed models for `Effect`, `Param`, `Keyframe`, `TransformBox`, and `TextLayer` to `editing_core`, compiling and validating against `rendergraph.effects.json` and `rendergraph.schema.json` (easing functions, parameter bounds).
   - **Phase 5 (Desktop App & Timeline UI)**: Implement UI Inspector controls for effect parameters, transform anchor/scale, and text layer input with Arabic RTL HarfBuzz + FreeType text rasterization in Media Core.
   - **Phase 6 & 7 (Preview & Native Engine)**: Preview and final export rendering in native MLT/FFmpeg worker.
+
+---
+
+## OQ-008: Table-vs-Blob Decision and Storage Schema in `.ssproj`
+
+- **Context**: Spec §11 states that `.ssproj` is a project-specific SQLite database holding document state and operations (`document + ops`).
+- **Question**: Should the document snapshot be normalized across dozens of entity tables (`clips`, `tracks`, `assets`, etc.) or stored as a versioned canonical JSON snapshot inside SQLite accompanied by the append-only `edit_ops` table?
+- **Decision / Proposed Default**: **Hybrid Document-Snapshot + Operations Log**:
+  - `project_state` table holds the single authoritative document snapshot (`document_json`), metadata (`id`, `name`, `revision`, `schema_version`, timestamps).
+  - `edit_ops` table holds the sequential, append-only history of every committed `EditTransaction` (`seq`, `project_id`, `revision`, `batch_id`, `op_type`, `payload_json`, `inverse_json`, `origin`, `created_at`).
+  - `schema_migrations` table tracks applied schema versions forward.
+  - **Rationale**:
+    1. **Performance (QG-7)**: A single-row snapshot read opens a 200-clip project in < 15 ms, comfortably beating the 120 ms spec budget, avoiding dozens of multi-table joins.
+    2. **ACID Durability**: Pure SQLite file with atomic writes (`.part` -> fsync -> rename) and `PRAGMA integrity_check`.
+    3. **Full Auditability**: The `edit_ops` table guarantees every undo/redo/transaction step is permanently recorded.
+    4. **Decoupled Boundary**: Allows `local_storage` to remain completely agnostic of Dart domain classes (Spec §2.2).
+
+---
+
+## OQ-009: Autosave Policy and Crash Recovery Interval
+
+- **Context**: Spec §11 and §1.2 QG-9 require crash recovery without lost edits, but disk writes must not stutter timeline playback or UI scrubbing.
+- **Question**: What is the default policy for autosaving project state?
+- **Proposed Default**:
+  - **Debounced Save on Edit**: After any `EditTransaction`, start a debounce timer of 3 seconds. If no further edits occur within 3 seconds, trigger an asynchronous background atomic save.
+  - **Max Unsaved Interval**: If continuous edits occur (e.g. rapid trimming or agent task loops), force an atomic save every 30 seconds.
+  - **Pre-flight Save**: Force an immediate atomic save before executing Dangerous agent tasks, before initiating export renders, and upon application close.
+  - **Recovery on Startup**: Startup automatically checks for `<name>.part` leftovers (from ungraceful termination mid-save) and restores the pristine `.ssproj` file without prompt or crash.

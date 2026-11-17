@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:local_storage/local_storage.dart';
+
 import '../commands/edit_command.dart';
 import '../error/shadow_error.dart';
 import '../invariants/document_invariants.dart';
@@ -30,20 +34,48 @@ class _UndoEntry {
 /// - Optimistic concurrency via expectedRevision with EDIT_REVISION_MISMATCH.
 /// - Append-only revision incrementing.
 /// - Full undo/redo symmetry.
+/// - Durable project file persistence on top of [ProjectFileStorage].
 class DefaultEditingService implements EditingService {
   int _revision;
   ProjectDocument _currentDocument;
+  String? _projectFilePath;
+  final ProjectFileStorage _storage;
 
   final List<_UndoEntry> _undoStack = [];
   final List<_UndoEntry> _redoStack = [];
+  final List<StoredEditOp> _committedOps = [];
 
   DefaultEditingService({
     required ProjectDocument initialDocument,
     int initialRevision = 0,
+    String? projectFilePath,
+    ProjectFileStorage storage = const ProjectFileStorage(),
   })  : _currentDocument = initialDocument,
-        _revision = initialRevision {
+        _revision = initialRevision,
+        _projectFilePath = projectFilePath,
+        _storage = storage {
     // Ensure initial document passes invariant checks
     DocumentInvariants.validate(_currentDocument);
+  }
+
+  /// Opens an existing project file at [path] and returns an initialized [DefaultEditingService].
+  static Future<DefaultEditingService> open(
+    String path, {
+    ProjectFileStorage storage = const ProjectFileStorage(),
+  }) async {
+    final (projectData, ops) = await storage.openProjectFile(path);
+    final docMap = jsonDecode(projectData.documentJson) as Map<String, dynamic>;
+    final doc = ProjectDocument.fromJson(docMap);
+    DocumentInvariants.validate(doc);
+
+    final service = DefaultEditingService(
+      initialDocument: doc,
+      initialRevision: projectData.revision,
+      projectFilePath: path,
+      storage: storage,
+    );
+    service._committedOps.addAll(ops);
+    return service;
   }
 
   @override
@@ -51,6 +83,12 @@ class DefaultEditingService implements EditingService {
 
   @override
   ProjectDocument get currentDocument => _currentDocument;
+
+  @override
+  String? get projectFilePath => _projectFilePath;
+
+  /// Internal access to ops log for testing and verification.
+  List<StoredEditOp> get committedOps => List.unmodifiable(_committedOps);
 
   @override
   bool get canUndo => _undoStack.isNotEmpty;
@@ -111,6 +149,24 @@ class DefaultEditingService implements EditingService {
     // 4. Commit state transition atomically
     _currentDocument = draftDoc;
     _revision++;
+
+    final now = DateTime.now().toUtc().toIso8601String();
+    for (var i = 0; i < transaction.commands.length; i++) {
+      final cmd = transaction.commands[i];
+      final inv = executedInverses[i];
+      _committedOps.add(
+        StoredEditOp(
+          projectId: _currentDocument.id,
+          revision: _revision,
+          batchId: transaction.id,
+          opType: cmd.name,
+          payloadJson: jsonEncode({'command': cmd.toString()}),
+          inverseJson: jsonEncode({'inverse': inv.toString()}),
+          origin: transaction.origin,
+          createdAt: now,
+        ),
+      );
+    }
 
     _undoStack.add(
       _UndoEntry(
@@ -265,13 +321,69 @@ class DefaultEditingService implements EditingService {
   }
 
   @override
-  Future<ProjectDocument> openProject(String path) {
-    throw UnimplementedError('openProject is deferred to Phase 2 (local_storage)');
+  Future<ProjectDocument> openProject(String path) async {
+    try {
+      final (projectData, ops) = await _storage.openProjectFile(path);
+      final docMap = jsonDecode(projectData.documentJson) as Map<String, dynamic>;
+      final doc = ProjectDocument.fromJson(docMap);
+      DocumentInvariants.validate(doc);
+
+      _currentDocument = doc;
+      _revision = projectData.revision;
+      _projectFilePath = path;
+      _undoStack.clear();
+      _redoStack.clear();
+      _committedOps.clear();
+      _committedOps.addAll(ops);
+
+      return _currentDocument;
+    } on StorageError catch (e) {
+      throw ShadowError(
+        code: e.code,
+        category: e.category,
+        retryable: e.retryable,
+        message: e.message,
+        details: e.details,
+      );
+    }
   }
 
   @override
-  Future<void> save() {
-    throw UnimplementedError('save is deferred to Phase 2 (local_storage)');
+  Future<void> save() async {
+    final path = _projectFilePath;
+    if (path == null) {
+      throw ShadowError.invalidOperation(
+        'Cannot save: no project file path specified',
+      );
+    }
+    await saveTo(path);
+  }
+
+  /// Saves the project to [targetPath] atomically and updates [projectFilePath].
+  Future<void> saveTo(String targetPath) async {
+    try {
+      final now = DateTime.now().toUtc().toIso8601String();
+      final projectData = ProjectFileData(
+        projectId: _currentDocument.id,
+        name: _currentDocument.name,
+        schemaVersion: SchemaMigrations.currentVersion,
+        revision: _revision,
+        documentJson: jsonEncode(_currentDocument.toJson()),
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      await _storage.saveProjectFile(targetPath, projectData, ops: _committedOps);
+      _projectFilePath = targetPath;
+    } on StorageError catch (e) {
+      throw ShadowError(
+        code: e.code,
+        category: e.category,
+        retryable: e.retryable,
+        message: e.message,
+        details: e.details,
+      );
+    }
   }
 
   @override

@@ -4,3 +4,4 @@ environment:
 
 workspace:
   - packages/editing_core
+  - packages/local_storage

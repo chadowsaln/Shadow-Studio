@@ -279,15 +279,20 @@ void main() {
       expect(service.currentDocument, equals(documentAfterFirstApply));
     });
 
-    test('openProject, save, and resolveGraph throw UnimplementedError in Phase 1', () {
-      expect(
-        () => service.openProject('/some/path.ssproj'),
-        throwsUnimplementedError,
-      );
+    test('save without file path throws ShadowError.invalidOperation', () {
       expect(
         () => service.save(),
-        throwsUnimplementedError,
+        throwsA(
+          isA<ShadowError>().having(
+            (e) => e.code,
+            'code',
+            'EDIT_INVALID_OPERATION',
+          ),
+        ),
       );
+    });
+
+    test('resolveGraph throws UnimplementedError in Phase 1 & 2', () {
       expect(
         () => service.resolveGraph(
           revision: 0,

@@ -19,6 +19,9 @@ abstract interface class EditingService {
   /// Current immutable document snapshot.
   ProjectDocument get currentDocument;
 
+  /// Path to the currently opened `.ssproj` file, if any.
+  String? get projectFilePath;
+
   /// Whether there are transactions available to undo.
   bool get canUndo;
 
