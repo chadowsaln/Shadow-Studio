@@ -108,3 +108,26 @@ Where the architecture specifications are silent, ambiguous, or allow multiple i
   - **Max Unsaved Interval**: If continuous edits occur (e.g. rapid trimming or agent task loops), force an atomic save every 30 seconds.
   - **Pre-flight Save**: Force an immediate atomic save before executing Dangerous agent tasks, before initiating export renders, and upon application close.
   - **Recovery on Startup**: Startup automatically checks for `<name>.part` leftovers (from ungraceful termination mid-save) and restores the pristine `.ssproj` file without prompt or crash.
+
+---
+
+## OQ-010: Audio Waveform Peak Sampling Density and Storage Format
+
+- **Context**: Spec §10.1 specifies that FFmpeg owns proxy, thumbnail, and waveform generation. Waveforms must render smoothly on desktop timeline tracks during scrubbing and zoom changes without UI stutter.
+- **Question**: What sampling density and data structure should be stored for audio waveforms?
+- **Decision / Proposed Default**:
+  - Sample density is standardized at 100 samples per second (100 Hz).
+  - Piped PCM is extracted at 8 kHz mono signed 16-bit little-endian (`-ac 1 -ar 8000 -f s16le -`), downsampled into 80-sample buckets, yielding max peak amplitudes normalized to `[0.0, 1.0]` along with optional `minPeaks` and `maxPeaks`.
+  - For a 10-minute audio asset, 100 Hz produces 60,000 float points (~240 KB in memory), which renders at 60 fps on desktop timeline canvases and can be cached directly alongside asset metadata.
+
+---
+
+## OQ-011: Proxy Transcoding Codec and Atomic Ingestion Protocol
+
+- **Context**: Spec §10.1, §11, and §14.1 require fast proxy generation that avoids disk corruption on mid-save crash.
+- **Question**: What codec profile, resolution, and atomic write protocol should be used for edit proxies?
+- **Decision / Proposed Default**:
+  - Proxy target resolution defaults to 720p (scaled maintaining aspect ratio: `-vf "scale=-2:720"`).
+  - Codec is H.264 Baseline Profile with `libx264` (`-preset ultrafast -crf 28`) and AAC stereo audio (128 kbps).
+  - Proxies are always written with atomic write semantics (`<cacheDir>/proxies/<blake3Hash>.mp4.part` -> fsync -> rename) and explicit format flag (`-f mp4`), preventing corrupted partial files from entering the cache if the application is killed during transcoding.
+
