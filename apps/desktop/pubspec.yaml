@@ -16,6 +16,16 @@ dependencies:
   editing_core: any
   local_storage: any
   media_core: any
+  shadow_agent_runtime:
+    path: ../../packages/agent_runtime
+  shadow_contracts:
+    path: ../../packages/contracts
+  shadow_provider_gateway:
+    path: ../../packages/provider_gateway
+  shadow_tool_system:
+    path: ../../packages/tool_system
+  shadow_permissions:
+    path: ../../packages/permissions
 
 dev_dependencies:
   flutter_test:

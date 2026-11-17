@@ -14,7 +14,7 @@ Shadow Studio is a **well-structured, well-documented, and largely non-functiona
 
 - The **domain/editing core is genuinely implemented**: immutable document, commands, invariants, optimistic concurrency, undo/redo, RenderGraph resolution, atomic SQLite persistence, media probing via FFmpeg.
 - The **desktop editor shell is genuinely interactive**: RTL shell, timeline, inspector, media bin, status bar, theme system, keyboard map, controller state.
-- The **AI/agent half of the product is not wired and cannot run**: there is **no real HTTP transport** (every provider adapter defaults to `MockProviderTransport`), **no LLM-backed brain**, **no production `ApprovalGate`**, and **the desktop app does not depend on the agent, provider, tool, permission, or context packages at all**.
+- The **AI/agent half is now wired into the desktop app**: `AgentSessionController` uses the real runtime, HTTP transport, permission engine, and approval gate, and `AiPanel` exposes provider setup, consent, plan, approvals, and cancellation. A live provider call is still unverified without credentials, and the AI still has no chain-of-thought surface by design.
 - The **preview is a mock** (icon + label, no decoded frames) and **export is a simulated timer** (no encode, no file written).
 - Several **duplicated contracts and models** (two `ShadowError`, two `ApprovalToken`, two `EditingService`/`ProjectDocument`/`EditTransaction`, two theme systems) are actively misleading and will cause integration defects.
 
@@ -276,7 +276,9 @@ Intended (spec §2.2): `contracts` ← everything; `editing_core`, `media_core`,
 Actual imports:
 
 ```
-desktop ──► editing_core, local_storage, media_core        (no AI stack)
+desktop ──► editing_core, local_storage, media_core,
+            agent_runtime, provider_gateway, tool_system,
+            permissions, contracts
 editing_core ──► local_storage ──► agent_runtime ──► contracts
 local_storage ──► agent_runtime            (checkpoint_store.dart:3)
 context_engine ──► local_storage           (memory_manager.dart:1)
