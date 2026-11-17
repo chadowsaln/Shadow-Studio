@@ -60,6 +60,16 @@ class Asset {
         if (hash != null) 'hash': hash,
       };
 
+  factory Asset.fromJson(Map<String, Object?> json) {
+    return Asset(
+      id: json['id'] as String,
+      kind: AssetKind.fromWireName(json['kind'] as String),
+      uri: json['uri'] as String,
+      durationTicks: json['duration_ticks'] as int,
+      hash: json['hash'] as String?,
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

@@ -71,6 +71,16 @@ class ProjectProfile {
         'interlaced': false,
       };
 
+  factory ProjectProfile.fromJson(Map<String, Object?> json) {
+    return ProjectProfile(
+      width: json['width'] as int,
+      height: json['height'] as int,
+      pixelFormat: (json['pixel_format'] as String?) ?? 'yuv420p',
+      colorSpace: (json['color_space'] as String?) ?? 'bt709',
+      interlaced: (json['interlaced'] as bool?) ?? false,
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

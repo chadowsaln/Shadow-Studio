@@ -237,6 +237,48 @@ void main() {
       expect(service.revision, equals(0));
     });
 
+    test('determinism: apply -> undo -> redo yields a document equal to the first apply', () async {
+      final clip = Clip.video(
+        id: UuidV7.generate(),
+        assetId: videoAsset.id,
+        timelineStartTicks: 1000000,
+        durationTicks: 8000000,
+        sourceInTicks: 1000000,
+      );
+
+      // Base: add the clip
+      await service.apply(
+        EditTransaction.single(AddClipCommand(trackId: trackV1.id, clip: clip)),
+        expectedRevision: 0,
+      );
+
+      // Split clip with a specified new clip ID (pure, deterministic inputs)
+      final secondClipId = UuidV7.generate();
+      final splitTxn = EditTransaction.single(
+        SplitClipCommand(
+          trackId: trackV1.id,
+          clipId: clip.id,
+          splitAtTick: 4000000,
+          newClipId: secondClipId,
+        ),
+      );
+
+      final firstApplyOutcome = await service.apply(splitTxn, expectedRevision: 1);
+      expect(firstApplyOutcome.isSuccess, isTrue);
+      final documentAfterFirstApply = service.currentDocument;
+
+      // Undo the split
+      final undoOutcome = await service.undo(expectedRevision: 2);
+      expect(undoOutcome.isSuccess, isTrue);
+
+      // Redo the split
+      final redoOutcome = await service.redo(expectedRevision: 3);
+      expect(redoOutcome.isSuccess, isTrue);
+
+      // Strict document equality check: apply -> undo -> redo yields identical document
+      expect(service.currentDocument, equals(documentAfterFirstApply));
+    });
+
     test('openProject, save, and resolveGraph throw UnimplementedError in Phase 1', () {
       expect(
         () => service.openProject('/some/path.ssproj'),

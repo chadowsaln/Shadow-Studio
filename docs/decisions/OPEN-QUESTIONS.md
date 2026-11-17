@@ -35,15 +35,18 @@ Where the architecture specifications are silent, ambiguous, or allow multiple i
 
 ---
 
-## OQ-004: Asset Kind Matching on Track Kinds
+## OQ-004: Track Kinds, Clip Arrays, and Asset Kind Matching
 
-- **Context**: Spec §domain/invariants.py and Phase 1 state "asset kind matches track kind".
-- **Question**: What exact combinations of `AssetKind` and `TrackKind` are permitted?
+- **Context**: In `rendergraph.schema.json` and `validate_contract.py`, tracks declare specific clip arrays per track kind:
+  - `video` track: holds `clips` (`VideoClip` items) and optional cut-boundary `transitions`.
+  - `audio` track: holds `audio_clips` (`AudioClip` items).
+  - `overlay` track: holds `text_layers` (`TextLayer` items).
+- **Question**: How does `editing_core` model clip arrays and validate track/asset-kind compatibility?
 - **Decision / Proposed Default**:
-  - `TrackKind.video`: accepts `AssetKind.video` and `AssetKind.image` (and synthetic clips without assets like solid color or adjustment).
-  - `TrackKind.audio`: strictly requires `AssetKind.audio`.
-  - `TrackKind.overlay`: accepts `AssetKind.image` and `AssetKind.video`.
-  - Any mismatch (e.g. audio asset on video track or video asset on audio track) is rejected with `EDIT_INVALID_OPERATION`.
+  - `Track.toJson()` outputs exactly the schema-required array: `'clips'` for `video`, `'audio_clips'` for `audio`, and `'text_layers'` for `overlay`.
+  - `TrackKind.video`: accepts clips of kind `video`, `image`, `color`, `adjustment`. Allowed assets: `AssetKind.video`, `AssetKind.image`.
+  - `TrackKind.audio`: strictly holds clips of kind `audio`. Allowed assets: `AssetKind.audio`, or `AssetKind.video` when referencing an embedded audio stream via `stream_index >= 0`.
+  - `TrackKind.overlay`: reserved for text layers / rasters. Media clips are rejected with `EDIT_INVALID_OPERATION`.
 
 ---
 
@@ -51,4 +54,29 @@ Where the architecture specifications are silent, ambiguous, or allow multiple i
 
 - **Context**: Spec §9.3 includes `openProject`, `save`, and `resolveGraph` on `EditingService`. Phase 1 instructions state: "Leave openProject/save/resolveGraph for later phases but keep the interface compatible."
 - **Question**: How should `EditingService` handle calls to these methods during Phase 1?
-- **Decision / Proposed Default**: These methods are declared on the interface matching Spec §9.3 signatures. In `DefaultEditingService`, they throw `UnimplementedError` citing the phase where they will be implemented (Phase 2 for `openProject` and `save` via `local_storage`, Phase 3 for `resolveGraph` via RenderGraph resolver).
+- **Decision / Proposed Default**: These methods are declared on the interface matching Spec §9.3 signatures. In `DefaultEditingService`, `openProject` and `save` are wired in Phase 2 on top of `local_storage`, while `resolveGraph` is deferred to Phase 3.
+
+---
+
+## OQ-006: Video Asset Embedded Audio Routing to Audio Tracks
+
+- **Context**: A single imported video file (e.g. MP4) typically contains both a video stream (stream 0) and an audio stream (stream 1).
+- **Question**: How does a video asset's embedded audio reach an audio track in the timeline without duplicating or re-encoding files?
+- **Proposed Default**:
+  - `Asset` retains `kind: AssetKind.video` representing the container.
+  - When placing the media on the timeline, two linked clips are created:
+    1. A `VideoClip` on a video track with `stream_index: 0` (or primary video stream).
+    2. An `AudioClip` on an audio track referencing the same `asset_id` with `stream_index: 1` (the audio stream).
+  - `rendergraph.schema.json` already natively supports this: `AudioClip.asset_id` and `AudioClip.stream_index` allow audio tracks to pull PCM from container files directly during MLT/FFmpeg compilation.
+  - In Phase 5 (UI), the clips can share a link identifier (`link_id` / group) so moving or trimming one keeps audio and video in sync by default.
+
+---
+
+## OQ-007: Phasing for Effects, Keyframes, and Arabic Text Layers
+
+- **Context**: Effects, keyframe animations, and Arabic text overlays are specified in `rendergraph.schema.json` and the UI spec.
+- **Question**: In which phases do effects, keyframes, and Arabic text layers enter the model and runtime?
+- **Proposed Default**:
+  - **Phase 3 (RenderGraph derivation)**: Add typed models for `Effect`, `Param`, `Keyframe`, `TransformBox`, and `TextLayer` to `editing_core`, compiling and validating against `rendergraph.effects.json` and `rendergraph.schema.json` (easing functions, parameter bounds).
+  - **Phase 5 (Desktop App & Timeline UI)**: Implement UI Inspector controls for effect parameters, transform anchor/scale, and text layer input with Arabic RTL HarfBuzz + FreeType text rasterization in Media Core.
+  - **Phase 6 & 7 (Preview & Native Engine)**: Preview and final export rendering in native MLT/FFmpeg worker.

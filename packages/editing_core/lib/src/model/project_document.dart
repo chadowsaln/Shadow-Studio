@@ -124,6 +124,32 @@ class ProjectDocument {
         'assets': assets.map((k, v) => MapEntry(k, v.toJson())),
       };
 
+  factory ProjectDocument.fromJson(Map<String, Object?> json) {
+    final rawTracks = (json['tracks'] as List<dynamic>?) ?? const [];
+    final tracks = rawTracks
+        .map((t) => Track.fromJson((t as Map).cast<String, Object?>()))
+        .toList();
+
+    final rawAssets = (json['assets'] as Map<String, dynamic>?) ?? const {};
+    final assets = rawAssets.map(
+      (k, v) => MapEntry(k, Asset.fromJson((v as Map).cast<String, Object?>())),
+    );
+
+    return ProjectDocument(
+      id: json['id'] as String?,
+      name: json['name'] as String,
+      sequenceId: json['sequence_id'] as String?,
+      profile: ProjectProfile.fromJson(
+        (json['profile'] as Map).cast<String, Object?>(),
+      ),
+      timebase: Timebase.fromJson(
+        (json['timebase'] as Map).cast<String, Object?>(),
+      ),
+      tracks: tracks,
+      assets: assets,
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
