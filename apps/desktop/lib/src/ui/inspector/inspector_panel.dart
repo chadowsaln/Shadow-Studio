@@ -5,6 +5,7 @@ import '../../controller/editor_controller.dart';
 import '../../theme/shadow_colors.dart';
 import '../../theme/shadow_typography.dart';
 import '../../utils/timecode_formatter.dart';
+import 'audio_inspector.dart';
 import 'text_inspector.dart';
 import 'transform_inspector.dart';
 
@@ -98,6 +99,14 @@ class InspectorPanel extends StatelessWidget {
                   // Text Layer Inspector if Overlay
                   if (selectedTrack?.kind == TrackKind.overlay) ...[
                     const TextInspector(),
+                    const SizedBox(height: 16),
+                    Divider(color: colors.border, height: 1),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Audio Properties Inspector if Audio Track
+                  if (selectedTrack?.kind == TrackKind.audio) ...[
+                    const AudioInspector(),
                     const SizedBox(height: 16),
                     Divider(color: colors.border, height: 1),
                     const SizedBox(height: 16),

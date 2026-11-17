@@ -62,6 +62,14 @@ class _AppShellState extends State<AppShell> {
       widget.controller.setToolMode(ToolMode.razor);
       return KeyEventResult.handled;
     }
+    if (!isCtrl && event.logicalKey == LogicalKeyboardKey.keyS) {
+      widget.controller.toggleSnapping();
+      return KeyEventResult.handled;
+    }
+    if (!isCtrl && event.logicalKey == LogicalKeyboardKey.keyF) {
+      widget.controller.fitToTimeline(800.0);
+      return KeyEventResult.handled;
+    }
     if (event.logicalKey == LogicalKeyboardKey.delete || event.logicalKey == LogicalKeyboardKey.backspace) {
       widget.controller.deleteSelectedClip();
       return KeyEventResult.handled;

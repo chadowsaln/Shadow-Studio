@@ -1,10 +1,12 @@
+import 'package:editing_core/editing_core.dart';
 import 'package:flutter/material.dart';
 
 import '../../controller/editor_controller.dart';
 import '../../theme/shadow_colors.dart';
 import '../../theme/shadow_typography.dart';
 
-/// Toolbar above the timeline tracks providing tool selection and zoom controls.
+/// Toolbar above the timeline tracks providing tool selection, magnetic snapping,
+/// track management, and zoom controls.
 class TimelineToolbar extends StatelessWidget {
   final EditorController controller;
   final VoidCallback onFitPressed;
@@ -44,6 +46,15 @@ class TimelineToolbar extends StatelessWidget {
             isActive: controller.toolMode == ToolMode.razor,
             onPressed: () => controller.setToolMode(ToolMode.razor),
           ),
+          const SizedBox(width: 4),
+
+          // Magnetic Snapping Toggle (S)
+          _ToolButton(
+            icon: Icons.straighten,
+            label: 'Snap',
+            isActive: controller.snappingEnabled,
+            onPressed: controller.toggleSnapping,
+          ),
 
           const SizedBox(width: 8),
           Container(width: 1, height: 16, color: colors.border),
@@ -68,6 +79,74 @@ class TimelineToolbar extends StatelessWidget {
             color: controller.selectedClipId != null ? colors.danger : colors.textMuted,
             tooltip: 'Delete Selected Clip (Delete/Backspace)',
             onPressed: controller.selectedClipId != null ? controller.deleteSelectedClip : null,
+          ),
+
+          const SizedBox(width: 8),
+          Container(width: 1, height: 16, color: colors.border),
+          const SizedBox(width: 8),
+
+          // Add Track Popup Menu
+          PopupMenuButton<TrackKind>(
+            tooltip: 'Add Track',
+            icon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add, size: 14, color: colors.textSecondary),
+                const SizedBox(width: 2),
+                Text(
+                  'Track',
+                  style: ShadowTypography.caption.copyWith(color: colors.textSecondary, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            padding: EdgeInsets.zero,
+            color: colors.surface2,
+            onSelected: (kind) => controller.addTrack(kind),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: TrackKind.video,
+                child: Row(
+                  children: [
+                    Icon(Icons.videocam, size: 16, color: colors.trackVideo),
+                    const SizedBox(width: 8),
+                    const Text('Video Track'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: TrackKind.audio,
+                child: Row(
+                  children: [
+                    Icon(Icons.audiotrack, size: 16, color: colors.trackAudio),
+                    const SizedBox(width: 8),
+                    const Text('Audio Track'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: TrackKind.overlay,
+                child: Row(
+                  children: [
+                    Icon(Icons.title, size: 16, color: colors.trackOverlay),
+                    const SizedBox(width: 8),
+                    const Text('Overlay / Text Track'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Track Height Selector
+          PopupMenuButton<double>(
+            tooltip: 'Track Height',
+            icon: Icon(Icons.table_rows_outlined, size: 16, color: colors.textSecondary),
+            color: colors.surface2,
+            onSelected: (h) => controller.setTrackHeight(h),
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 36.0, child: Text('Compact (36px)')),
+              const PopupMenuItem(value: 48.0, child: Text('Normal (48px)')),
+              const PopupMenuItem(value: 64.0, child: Text('Expanded (64px)')),
+            ],
           ),
 
           const Spacer(),

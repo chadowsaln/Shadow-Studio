@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../controller/editor_controller.dart';
 import '../../theme/shadow_colors.dart';
+import '../../theme/shadow_typography.dart';
+import '../../utils/timecode_formatter.dart';
 
-/// Playhead indicator line and draggable scrubber handle.
+/// Playhead indicator line with timecode flag badge and interactive scrubbing handle.
 class PlayheadWidget extends StatelessWidget {
   final EditorController controller;
   final double totalHeight;
@@ -21,33 +23,77 @@ class PlayheadWidget extends StatelessWidget {
     final x = (controller.playheadTicks / 1000000.0) * pps;
 
     return Positioned(
-      left: x - 6,
+      left: x - 35,
       top: 0,
       bottom: 0,
-      width: 12,
+      width: 70,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onHorizontalDragUpdate: (details) {
           final deltaSeconds = details.delta.dx / pps;
           final deltaTicks = (deltaSeconds * 1000000).round();
-          controller.seek(controller.playheadTicks + deltaTicks);
+          final candidateTicks = (controller.playheadTicks + deltaTicks).clamp(0, 1000000000);
+          final snappedTicks = controller.snapTick(candidateTicks);
+          controller.seek(snappedTicks);
         },
         child: Stack(
           alignment: Alignment.topCenter,
+          clipBehavior: Clip.none,
           children: [
-            // Vertical Line
+            // Vertical Red Line spanning the entire timeline
             Positioned(
-              left: 5.5,
-              top: 14,
+              left: 34.25,
+              top: 22,
               bottom: 0,
               width: 1.5,
-              child: Container(color: colors.playhead),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: colors.playhead,
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.playhead.withOpacity(0.6),
+                      blurRadius: 4,
+                      spreadRadius: 0.5,
+                    ),
+                  ],
+                ),
+              ),
             ),
 
-            // Top Scrubber Handle (Triangle head)
-            CustomPaint(
-              size: const Size(12, 14),
-              painter: _PlayheadHandlePainter(color: colors.playhead),
+            // Top Playhead Scrubber Flag Badge with Timecode
+            Positioned(
+              top: 1,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: colors.playhead,
+                      borderRadius: BorderRadius.circular(3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.5),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      TimecodeFormatter.format(controller.playheadTicks),
+                      style: ShadowTypography.numeric.copyWith(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  CustomPaint(
+                    size: const Size(8, 4),
+                    painter: _FlagPointerPainter(color: colors.playhead),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -56,10 +102,10 @@ class PlayheadWidget extends StatelessWidget {
   }
 }
 
-class _PlayheadHandlePainter extends CustomPainter {
+class _FlagPointerPainter extends CustomPainter {
   final Color color;
 
-  _PlayheadHandlePainter({required this.color});
+  _FlagPointerPainter({required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -70,15 +116,13 @@ class _PlayheadHandlePainter extends CustomPainter {
     final path = Path()
       ..moveTo(0, 0)
       ..lineTo(size.width, 0)
-      ..lineTo(size.width, size.height * 0.6)
       ..lineTo(size.width / 2, size.height)
-      ..lineTo(0, size.height * 0.6)
       ..close();
 
     canvas.drawPath(path, paint);
   }
 
   @override
-  bool shouldRepaint(covariant _PlayheadHandlePainter oldDelegate) =>
+  bool shouldRepaint(covariant _FlagPointerPainter oldDelegate) =>
       oldDelegate.color != color;
 }

@@ -16,6 +16,7 @@ dependencies:
   editing_core: any
   local_storage: any
   media_core: any
+  desktop_drop: ^0.9.2
 
 dev_dependencies:
   flutter_test:

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:editing_core/editing_core.dart';
 import 'package:flutter/foundation.dart';
@@ -35,12 +36,19 @@ class EditorController extends ChangeNotifier {
   String? _selectedTrackId;
   bool _showSafeArea = true;
   LayoutPreset _layoutPreset = LayoutPreset.editing;
+  bool _snappingEnabled = true;
+  double _trackHeight = 48.0;
+  double _aspectRatio = 16 / 9;
+  double _previewZoom = 1.0;
+  List<double> _audioLevels = [0.0, 0.0];
 
   // Persistence State
+  String _projectName = 'Shadow Studio Project';
   String? _currentProjectPath;
   bool _isSaving = false;
   DateTime? _lastSaveTime;
   String? _statusMessage;
+  int _lastSavedRevision = 0;
 
   EditorController({
     required this.editingService,
@@ -61,6 +69,13 @@ class EditorController extends ChangeNotifier {
   bool get isSaving => _isSaving;
   DateTime? get lastSaveTime => _lastSaveTime;
   String? get statusMessage => _statusMessage;
+  bool get snappingEnabled => _snappingEnabled;
+  double get trackHeight => _trackHeight;
+  double get aspectRatio => _aspectRatio;
+  double get previewZoom => _previewZoom;
+  List<double> get audioLevels => _audioLevels;
+  String get projectName => _projectName;
+  bool get isDirty => revision != _lastSavedRevision;
 
   ProjectDocument get document => editingService.currentDocument;
   int get revision => editingService.revision;
@@ -126,6 +141,12 @@ class EditorController extends ChangeNotifier {
         _playheadTicks = 0;
       } else {
         _playheadTicks += ticksPerStep;
+        // Natural audio peak fluctuations during playback
+        final rand = math.Random();
+        _audioLevels = [
+          (0.35 + rand.nextDouble() * 0.45).clamp(0.0, 1.0),
+          (0.30 + rand.nextDouble() * 0.50).clamp(0.0, 1.0),
+        ];
       }
       notifyListeners();
     });
@@ -135,6 +156,7 @@ class EditorController extends ChangeNotifier {
   void pause() {
     if (!_isPlaying) return;
     _isPlaying = false;
+    _audioLevels = [0.0, 0.0];
     _playbackTimer?.cancel();
     _playbackTimer = null;
     notifyListeners();
@@ -175,6 +197,80 @@ class EditorController extends ChangeNotifier {
 
   void setLayoutPreset(LayoutPreset preset) {
     _layoutPreset = preset;
+    notifyListeners();
+  }
+
+  // Snapping and Alignment
+  void toggleSnapping() {
+    _snappingEnabled = !_snappingEnabled;
+    notifyListeners();
+  }
+
+  void setSnapping(bool enabled) {
+    _snappingEnabled = enabled;
+    notifyListeners();
+  }
+
+  /// Calculates magnetic snap against 0, playhead, and all clip boundaries.
+  int snapTick(int candidateTicks, {int thresholdPx = 12, String? ignoreClipId}) {
+    if (!_snappingEnabled) return candidateTicks.clamp(0, 1000000000);
+    final thresholdTicks = ((thresholdPx / _pixelsPerSecond) * 1000000).round();
+
+    int bestTick = candidateTicks;
+    int minDistance = thresholdTicks + 1;
+
+    // 1. Snap to 0
+    final distZero = (candidateTicks - 0).abs();
+    if (distZero < minDistance) {
+      minDistance = distZero;
+      bestTick = 0;
+    }
+
+    // 2. Snap to Playhead
+    final distPlayhead = (candidateTicks - _playheadTicks).abs();
+    if (distPlayhead < minDistance) {
+      minDistance = distPlayhead;
+      bestTick = _playheadTicks;
+    }
+
+    // 3. Snap to clip boundaries across all tracks
+    for (final track in document.tracks) {
+      for (final clip in track.clips) {
+        if (clip.id == ignoreClipId) continue;
+        final distStart = (candidateTicks - clip.timelineStartTicks).abs();
+        if (distStart < minDistance) {
+          minDistance = distStart;
+          bestTick = clip.timelineStartTicks;
+        }
+        final distEnd = (candidateTicks - clip.timelineEndTicks).abs();
+        if (distEnd < minDistance) {
+          minDistance = distEnd;
+          bestTick = clip.timelineEndTicks;
+        }
+      }
+    }
+
+    return bestTick.clamp(0, 1000000000);
+  }
+
+  // Track & Layout Configuration
+  void setTrackHeight(double h) {
+    _trackHeight = h.clamp(32.0, 96.0);
+    notifyListeners();
+  }
+
+  void setAspectRatio(double ratio) {
+    _aspectRatio = ratio;
+    notifyListeners();
+  }
+
+  void setPreviewZoom(double zoom) {
+    _previewZoom = zoom;
+    notifyListeners();
+  }
+
+  void setProjectName(String name) {
+    _projectName = name;
     notifyListeners();
   }
 
@@ -379,6 +475,174 @@ class EditorController extends ChangeNotifier {
     return result.isSuccess;
   }
 
+  /// Inserts an asset as a clip at a specific timeline position (used by drag-and-drop).
+  Future<bool> insertClipAt({
+    required ImportedMediaAsset imported,
+    required String trackId,
+    required int timelineStartTicks,
+    int? customDurationTicks,
+  }) async {
+    pause();
+    final trackIndex = document.tracks.indexWhere((t) => t.id == trackId);
+    if (trackIndex == -1) return false;
+    final targetTrack = document.tracks[trackIndex];
+
+    final commands = <EditCommand>[];
+    final assetId = imported.id;
+
+    if (!document.assets.containsKey(assetId)) {
+      commands.add(
+        AddAssetCommand(
+          Asset(
+            id: assetId,
+            kind: AssetKind.fromWireName(imported.kind.wireName),
+            uri: imported.sourceUri,
+            durationTicks: imported.durationTicks,
+            hash: imported.blake3Hash,
+          ),
+        ),
+      );
+    }
+
+    final duration = customDurationTicks ?? imported.durationTicks;
+    final clipId = 'clip_${UuidV7.generate()}';
+    commands.add(
+      AddClipCommand(
+        trackId: trackId,
+        clip: Clip(
+          id: clipId,
+          assetId: assetId,
+          kind: targetTrack.kind == TrackKind.video
+              ? ClipKind.video
+              : targetTrack.kind == TrackKind.audio
+                  ? ClipKind.audio
+                  : ClipKind.video,
+          timelineStartTicks: timelineStartTicks.clamp(0, 1000000000),
+          durationTicks: duration,
+          sourceInTicks: 0,
+          label: imported.sourcePath.split(Platform.pathSeparator).last,
+        ),
+      ),
+    );
+
+    final tx = EditTransaction(
+      id: UuidV7.generate(),
+      description: 'Drop clip onto ${targetTrack.name} at $timelineStartTicks',
+      commands: commands,
+    );
+
+    final result = await editingService.apply(tx, expectedRevision: revision);
+    if (result.isSuccess) {
+      selectClip(clipId, trackId: trackId);
+      seek(timelineStartTicks + duration);
+      return true;
+    }
+    return false;
+  }
+
+  /// Moves a clip to a new start position on the same track or to a target track.
+  Future<bool> moveClip({
+    required String trackId,
+    required String clipId,
+    required int newTimelineStartTicks,
+    String? targetTrackId,
+  }) async {
+    pause();
+    final toTrack = targetTrackId ?? trackId;
+    final moveCmd = MoveClipCommand(
+      clipId: clipId,
+      fromTrackId: trackId,
+      toTrackId: toTrack,
+      newTimelineStartTicks: newTimelineStartTicks.clamp(0, 1000000000),
+    );
+
+    final tx = EditTransaction(
+      id: UuidV7.generate(),
+      description: 'Move clip $clipId to $newTimelineStartTicks',
+      commands: [moveCmd],
+    );
+
+    final result = await editingService.apply(tx, expectedRevision: revision);
+    if (result.isSuccess) {
+      selectClip(clipId, trackId: toTrack);
+      return true;
+    }
+    return false;
+  }
+
+  /// Dynamically adds a new track to the project document.
+  Future<bool> addTrack(TrackKind kind, {String? name}) async {
+    pause();
+    final sameKindCount = document.tracks.where((t) => t.kind == kind).length;
+    final prefix = kind == TrackKind.video
+        ? 'V'
+        : kind == TrackKind.audio
+            ? 'A'
+            : 'T';
+    final trackName = name ?? '$prefix${sameKindCount + 1}';
+    final trackId = 'track_${kind.name}_${UuidV7.generate()}';
+
+    final addCmd = AddTrackCommand(
+      Track(
+        id: trackId,
+        kind: kind,
+        position: document.tracks.length,
+        name: trackName,
+      ),
+    );
+
+    final tx = EditTransaction(
+      id: UuidV7.generate(),
+      description: 'Add track $trackName',
+      commands: [addCmd],
+    );
+
+    final result = await editingService.apply(tx, expectedRevision: revision);
+    return result.isSuccess;
+  }
+
+  /// Removes a track from the document.
+  Future<bool> removeTrack(String trackId) async {
+    pause();
+    if (document.tracks.length <= 1) return false; // Preserve at least one track
+    final removeCmd = RemoveTrackCommand(trackId: trackId);
+    final tx = EditTransaction(
+      id: UuidV7.generate(),
+      description: 'Remove track $trackId',
+      commands: [removeCmd],
+    );
+    final result = await editingService.apply(tx, expectedRevision: revision);
+    if (result.isSuccess) {
+      if (_selectedTrackId == trackId) {
+        _selectedClipId = null;
+        _selectedTrackId = null;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /// Imports files dropped from the OS or file picker.
+  Future<List<ImportedMediaAsset>> importFiles(List<String> filePaths) async {
+    final importedAssets = <ImportedMediaAsset>[];
+    for (final path in filePaths) {
+      final file = File(path);
+      if (!file.existsSync()) continue;
+      try {
+        final asset = await mediaLibrary.importFile(
+          file.path,
+          generateProxy: false,
+          generateWaveform: true,
+        );
+        importedAssets.add(asset);
+      } catch (e) {
+        _statusMessage = 'Import error: $e';
+      }
+    }
+    notifyListeners();
+    return importedAssets;
+  }
+
   /// Saves the current project state atomically to disk.
   Future<bool> saveProject({String? path}) async {
     final savePath = path ?? _currentProjectPath;
@@ -395,6 +659,7 @@ class EditorController extends ChangeNotifier {
       }
       _currentProjectPath = savePath;
       _lastSaveTime = DateTime.now();
+      _lastSavedRevision = revision;
       _statusMessage = 'Project saved';
       return true;
     } catch (e) {

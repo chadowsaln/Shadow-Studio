@@ -5,7 +5,7 @@ import '../../theme/shadow_colors.dart';
 import '../../theme/shadow_typography.dart';
 import '../../utils/timecode_formatter.dart';
 
-/// 16:9 Viewport Canvas for video preview and safe area overlays.
+/// Viewport Canvas for video preview with dynamic aspect ratio and safe area overlays.
 class PreviewCanvas extends StatelessWidget {
   final EditorController controller;
 
@@ -32,14 +32,24 @@ class PreviewCanvas extends StatelessWidget {
 
     return Container(
       color: colors.surface0,
+      padding: const EdgeInsets.all(12),
       child: Center(
         child: AspectRatio(
-          aspectRatio: 16 / 9,
+          aspectRatio: controller.aspectRatio,
           child: Container(
             decoration: BoxDecoration(
               color: Colors.black,
+              borderRadius: BorderRadius.circular(4),
               border: Border.all(color: colors.border),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
+            clipBehavior: Clip.antiAlias,
             child: Stack(
               children: [
                 // Rendered Canvas Content / Mock Viewer
@@ -54,24 +64,39 @@ class PreviewCanvas extends StatelessWidget {
                                   : activeTrackKind == 'audio'
                                       ? Icons.graphic_eq
                                       : Icons.title,
-                              size: 48,
+                              size: 44,
                               color: colors.accent,
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 10),
                             Text(
                               activeClipLabel,
-                              style: ShadowTypography.title.copyWith(color: Colors.white, fontSize: 16),
+                              style: ShadowTypography.title.copyWith(color: Colors.white, fontSize: 15),
+                              textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 4),
-                            Text(
-                              'Track: $activeTrackKind',
-                              style: ShadowTypography.caption.copyWith(color: colors.textSecondary),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: colors.surface2.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                              child: Text(
+                                'Track: $activeTrackKind',
+                                style: ShadowTypography.caption.copyWith(color: colors.accent, fontSize: 10),
+                              ),
                             ),
                           ],
                         )
-                      : Text(
-                          'No Media at Current Time',
-                          style: ShadowTypography.body.copyWith(color: colors.textMuted),
+                      : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.tv_off, size: 36, color: colors.textMuted.withOpacity(0.5)),
+                            const SizedBox(height: 8),
+                            Text(
+                              'No media at playhead',
+                              style: ShadowTypography.body.copyWith(color: colors.textMuted, fontSize: 12),
+                            ),
+                          ],
                         ),
                 ),
 
@@ -79,22 +104,44 @@ class PreviewCanvas extends StatelessWidget {
                 if (controller.showSafeArea)
                   CustomPaint(
                     size: Size.infinite,
-                    painter: _SafeAreaPainter(borderColor: colors.border.withOpacity(0.4)),
+                    painter: _SafeAreaPainter(borderColor: colors.border.withOpacity(0.5)),
                   ),
 
                 // Timecode Overlay in Bottom Right
                 Positioned(
-                  bottom: 12,
-                  right: 12,
+                  bottom: 10,
+                  right: 10,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.black.withOpacity(0.75),
                       borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.white.withOpacity(0.1)),
                     ),
                     child: Text(
                       TimecodeFormatter.format(controller.playheadTicks),
-                      style: ShadowTypography.numeric.copyWith(color: Colors.white, fontSize: 13),
+                      style: ShadowTypography.numeric.copyWith(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Resolution badge in Top Left
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      '${controller.document.profile.width}x${controller.document.profile.height}',
+                      style: ShadowTypography.numeric.copyWith(color: colors.textSecondary, fontSize: 9),
                     ),
                   ),
                 ),
@@ -119,26 +166,30 @@ class _SafeAreaPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
-    // Action Safe: 90% (5% margin)
-    final actionSafe = Rect.fromLTWH(
-      size.width * 0.05,
-      size.height * 0.05,
-      size.width * 0.90,
-      size.height * 0.90,
+    // Action Safe: 90% of viewport
+    final actionSafe = Rect.fromCenter(
+      center: Offset(size.width / 2, size.height / 2),
+      width: size.width * 0.90,
+      height: size.height * 0.90,
     );
     canvas.drawRect(actionSafe, paint);
 
-    // Title Safe: 80% (10% margin)
-    final titleSafe = Rect.fromLTWH(
-      size.width * 0.10,
-      size.height * 0.10,
-      size.width * 0.80,
-      size.height * 0.80,
+    // Title Safe: 80% of viewport
+    final titleSafe = Rect.fromCenter(
+      center: Offset(size.width / 2, size.height / 2),
+      width: size.width * 0.80,
+      height: size.height * 0.80,
     );
     canvas.drawRect(titleSafe, paint);
+
+    // Center Crosshair
+    final center = Offset(size.width / 2, size.height / 2);
+    canvas.drawLine(Offset(center.dx - 8, center.dy), Offset(center.dx + 8, center.dy), paint);
+    canvas.drawLine(Offset(center.dx, center.dy - 8), Offset(center.dx, center.dy + 8), paint);
   }
 
   @override
-  bool shouldRepaint(covariant _SafeAreaPainter oldDelegate) =>
-      oldDelegate.borderColor != borderColor;
+  bool shouldRepaint(covariant _SafeAreaPainter oldDelegate) {
+    return oldDelegate.borderColor != borderColor;
+  }
 }

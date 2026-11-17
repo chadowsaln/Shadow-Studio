@@ -28,52 +28,68 @@ class StatusBar extends StatelessWidget {
         children: [
           // Readiness Dot
           Container(
-            width: 8,
-            height: 8,
+            width: 7,
+            height: 7,
             decoration: BoxDecoration(
               color: colors.success,
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Text(
             'Ready',
-            style: ShadowTypography.caption.copyWith(color: colors.textPrimary, fontWeight: FontWeight.w600),
+            style: ShadowTypography.caption.copyWith(color: colors.success, fontWeight: FontWeight.w600, fontSize: 11),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Container(width: 1, height: 12, color: colors.border),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
 
           // Revision Counter
           Text(
             'Rev ${controller.revision}',
-            style: ShadowTypography.caption.copyWith(color: colors.textSecondary),
+            style: ShadowTypography.numeric.copyWith(color: colors.textSecondary, fontSize: 11),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Container(width: 1, height: 12, color: colors.border),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
 
           // Clip and Asset Counts
           Text(
             '$clipCount clips · $assetCount assets',
-            style: ShadowTypography.caption.copyWith(color: colors.textSecondary),
+            style: ShadowTypography.caption.copyWith(color: colors.textSecondary, fontSize: 11),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Container(width: 1, height: 12, color: colors.border),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
 
           // Zoom Scale
           Text(
             '${controller.pixelsPerSecond.round()} px/s',
-            style: ShadowTypography.caption.copyWith(color: colors.textSecondary),
+            style: ShadowTypography.caption.copyWith(color: colors.textSecondary, fontSize: 11),
           ),
 
           const Spacer(),
 
+          // AI Agent Ready Badge
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.auto_awesome, size: 12, color: colors.accent),
+              const SizedBox(width: 4),
+              Text(
+                'AI Ready',
+                style: ShadowTypography.caption.copyWith(color: colors.accent, fontWeight: FontWeight.bold, fontSize: 10),
+              ),
+            ],
+          ),
+          const SizedBox(width: 14),
+          Container(width: 1, height: 12, color: colors.border),
+          const SizedBox(width: 14),
+
           // Position Timecode
           Text(
             'TC: ${TimecodeFormatter.format(controller.playheadTicks)}',
-            style: ShadowTypography.numeric.copyWith(color: colors.textPrimary),
+            style: ShadowTypography.numeric.copyWith(color: colors.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
           ),
         ],
       ),
