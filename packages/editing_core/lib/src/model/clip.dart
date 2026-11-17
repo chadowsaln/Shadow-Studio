@@ -1,4 +1,8 @@
+import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
+
+import 'effect.dart';
+import 'transform_box.dart';
 
 /// Clip kinds supported by the editor.
 enum ClipKind {
@@ -37,6 +41,8 @@ class Clip {
 
   // Video properties
   final int opacityPpm; // 0 to 1,000,000 (parts-per-million)
+  final TransformBox transform;
+  final List<Effect> effects;
 
   // Audio properties
   final int gainMb;     // -60,000 to +24,000 (millibels)
@@ -44,7 +50,7 @@ class Clip {
   final int fadeInTicks;
   final int fadeOutTicks;
 
-  const Clip({
+  Clip({
     required this.id,
     this.assetId,
     required this.kind,
@@ -57,11 +63,14 @@ class Clip {
     this.label,
     this.streamIndex = -1,
     this.opacityPpm = 1000000,
+    this.transform = const TransformBox.identity(),
+    Iterable<Effect> effects = const [],
     this.gainMb = 0,
     this.panPpm = 0,
     this.fadeInTicks = 0,
     this.fadeOutTicks = 0,
-  })  : assert(timelineStartTicks >= 0, 'timelineStartTicks must be >= 0'),
+  })  : effects = List.unmodifiable(effects),
+        assert(timelineStartTicks >= 0, 'timelineStartTicks must be >= 0'),
         assert(durationTicks >= 1, 'durationTicks must be >= 1'),
         assert(sourceInTicks >= 0, 'sourceInTicks must be >= 0'),
         assert(speedNum >= 1, 'speedNum must be >= 1'),
@@ -85,6 +94,8 @@ class Clip {
     String? label,
     int streamIndex = -1,
     int opacityPpm = 1000000,
+    TransformBox transform = const TransformBox.identity(),
+    Iterable<Effect> effects = const [],
   }) {
     return Clip(
       id: id,
@@ -99,6 +110,8 @@ class Clip {
       label: label,
       streamIndex: streamIndex,
       opacityPpm: opacityPpm,
+      transform: transform,
+      effects: effects,
     );
   }
 
@@ -160,6 +173,8 @@ class Clip {
     String? label,
     int? streamIndex,
     int? opacityPpm,
+    TransformBox? transform,
+    Iterable<Effect>? effects,
     int? gainMb,
     int? panPpm,
     int? fadeInTicks,
@@ -178,6 +193,8 @@ class Clip {
       label: label ?? this.label,
       streamIndex: streamIndex ?? this.streamIndex,
       opacityPpm: opacityPpm ?? this.opacityPpm,
+      transform: transform ?? this.transform,
+      effects: effects ?? this.effects,
       gainMb: gainMb ?? this.gainMb,
       panPpm: panPpm ?? this.panPpm,
       fadeInTicks: fadeInTicks ?? this.fadeInTicks,
@@ -215,6 +232,8 @@ class Clip {
         'enabled': enabled,
         if (label != null) 'label': label,
         'stream_index': streamIndex,
+        'transform': transform.toJson(),
+        if (effects.isNotEmpty) 'effects': effects.map((e) => e.toJson()).toList(),
       };
     }
   }
@@ -223,6 +242,18 @@ class Clip {
   factory Clip.fromJson(Map<String, Object?> json) {
     final rawKind = json['kind'] as String?;
     final isAudio = rawKind == 'audio' || json.containsKey('gain_mb');
+
+    TransformBox transform = const TransformBox.identity();
+    if (json.containsKey('transform') && json['transform'] != null) {
+      transform = TransformBox.fromJson(
+        (json['transform'] as Map).cast<String, Object?>(),
+      );
+    }
+
+    final rawEffects = (json['effects'] as List<dynamic>?) ?? const [];
+    final effects = rawEffects
+        .map((e) => Effect.fromJson((e as Map).cast<String, Object?>()))
+        .toList();
 
     return Clip(
       id: json['id'] as String,
@@ -239,6 +270,8 @@ class Clip {
       label: json['label'] as String?,
       streamIndex: (json['stream_index'] as int?) ?? -1,
       opacityPpm: (json['opacity_ppm'] as int?) ?? 1000000,
+      transform: transform,
+      effects: effects,
       gainMb: (json['gain_mb'] as int?) ?? 0,
       panPpm: (json['pan_ppm'] as int?) ?? 0,
       fadeInTicks: (json['fade_in_ticks'] as int?) ?? 0,
@@ -263,6 +296,8 @@ class Clip {
           label == other.label &&
           streamIndex == other.streamIndex &&
           opacityPpm == other.opacityPpm &&
+          transform == other.transform &&
+          const ListEquality<Effect>().equals(effects, other.effects) &&
           gainMb == other.gainMb &&
           panPpm == other.panPpm &&
           fadeInTicks == other.fadeInTicks &&
@@ -282,6 +317,8 @@ class Clip {
         label,
         streamIndex,
         opacityPpm,
+        transform,
+        const ListEquality<Effect>().hash(effects),
         gainMb,
         panPpm,
         fadeInTicks,
@@ -292,3 +329,4 @@ class Clip {
   String toString() =>
       'Clip(id: $id, kind: ${kind.name}, start: $timelineStartTicks, dur: $durationTicks, in: $sourceInTicks)';
 }
+

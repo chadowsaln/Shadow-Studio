@@ -1,15 +1,24 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:local_storage/local_storage.dart';
 
 import '../commands/edit_command.dart';
 import '../error/shadow_error.dart';
 import '../invariants/document_invariants.dart';
+import '../model/effect.dart';
+import '../model/param.dart';
 import '../model/project_document.dart';
 import '../model/range_ticks.dart';
 import '../model/render_graph.dart';
+import '../model/render_graph_clip.dart';
+import '../model/render_graph_track.dart';
+import '../model/text_layer.dart';
+import '../model/track.dart';
+import '../model/transition.dart';
 import '../transaction/edit_outcome.dart';
 import '../transaction/edit_transaction.dart';
+import '../uuid/uuid_v7.dart';
 import 'editing_service.dart';
 
 class _UndoEntry {
@@ -391,6 +400,278 @@ class DefaultEditingService implements EditingService {
     required int revision,
     required RangeTicks range,
   }) {
-    throw UnimplementedError('resolveGraph is deferred to Phase 3 (RenderGraph derivation)');
+    if (revision != _revision) {
+      throw ShadowError.revisionMismatch(
+        expected: revision,
+        actual: _revision,
+      );
+    }
+
+    if (range.startTicks < 0 || range.durationTicks <= 0) {
+      throw ShadowError.invalidOperation(
+        'Invalid range: start=${range.startTicks}, duration=${range.durationTicks}',
+      );
+    }
+
+    final rangeStart = range.startTicks;
+    final rangeEnd = range.endTicks;
+
+    // Sequence ID must be a valid UUIDv7
+    final sequenceId = UuidV7.ensureValid(_currentDocument.sequenceId);
+
+    final resolvedTracks = <RenderGraphTrack>[];
+
+    // Maintain tracks in position order 0..n-1
+    final sortedTracks = _currentDocument.tracks.toList()
+      ..sort((a, b) => a.position.compareTo(b.position));
+
+    for (var trackPos = 0; trackPos < sortedTracks.length; trackPos++) {
+      final track = sortedTracks[trackPos];
+      final trackId = UuidV7.ensureValid(track.id);
+
+      if (track.kind == TrackKind.video) {
+        final resolvedClips = <RenderGraphVideoClip>[];
+        final clipById = <String, RenderGraphVideoClip>{};
+
+        for (final clip in track.clips) {
+          // Check intersection with range
+          if (clip.timelineEndTicks <= rangeStart ||
+              clip.timelineStartTicks >= rangeEnd) {
+            continue;
+          }
+
+          final clipId = UuidV7.ensureValid(clip.id);
+          final asset = clip.assetId != null
+              ? _currentDocument.assets[clip.assetId]
+              : null;
+          final assetId = clip.assetId != null
+              ? UuidV7.ensureValid(clip.assetId!)
+              : null;
+
+          // Slicing to range window
+          final effectiveStart = max(clip.timelineStartTicks, rangeStart);
+          final effectiveEnd = min(clip.timelineEndTicks, rangeEnd);
+          final effectiveDuration = effectiveEnd - effectiveStart;
+          if (effectiveDuration <= 0) continue;
+
+          final startOffsetTicks = effectiveStart - clip.timelineStartTicks;
+          final sourceInOffsetTicks =
+              (startOffsetTicks * clip.speedNum) ~/ clip.speedDen;
+          final effectiveSourceIn = clip.sourceInTicks + sourceInOffsetTicks;
+
+          // Filter keyframes on effects that fall outside sliced clip bounds [effectiveStart, effectiveEnd)
+          final filteredEffects = <Effect>[];
+          for (final effect in clip.effects) {
+            final effectId = UuidV7.ensureValid(effect.id);
+            final filteredParams = <Param>[];
+            for (final param in effect.params) {
+              final filteredKfs = param.keyframes
+                  .where((kf) =>
+                      kf.atTicks >= effectiveStart && kf.atTicks < effectiveEnd)
+                  .toList();
+              filteredParams.add(
+                Param(
+                  name: param.name,
+                  type: param.type,
+                  value: param.value,
+                  keyframes: filteredKfs,
+                ),
+              );
+            }
+            filteredEffects.add(
+              Effect(
+                id: effectId,
+                effectKey: effect.effectKey,
+                enabled: effect.enabled,
+                params: filteredParams,
+              ),
+            );
+          }
+
+          final resolvedClip = RenderGraphVideoClip(
+            id: clipId,
+            assetId: assetId,
+            kind: clip.kind,
+            sourceUri: asset?.uri,
+            sourceHash: asset?.hash,
+            streamIndex: clip.streamIndex >= 0 ? clip.streamIndex : 0,
+            timelineStartTicks: effectiveStart,
+            durationTicks: effectiveDuration,
+            sourceInTicks: effectiveSourceIn,
+            speedNum: clip.speedNum,
+            speedDen: clip.speedDen,
+            opacityPpm: clip.opacityPpm,
+            enabled: clip.enabled,
+            label: clip.label,
+            transform: clip.transform,
+            effects: filteredEffects,
+          );
+
+          resolvedClips.add(resolvedClip);
+          clipById[clip.id] = resolvedClip;
+          clipById[clipId] = resolvedClip;
+        }
+
+        // Filter transitions: endpoints must exist, cut must be intact, and transition window inside range
+        final resolvedTransitions = <Transition>[];
+        for (final transition in track.transitions) {
+          final fromClip = clipById[transition.fromClipId];
+          final toClip = clipById[transition.toClipId];
+          if (fromClip == null || toClip == null) continue;
+
+          final cut = fromClip.timelineEndTicks;
+          if (transition.atTicks != cut) continue;
+          if (toClip.timelineStartTicks != cut) continue;
+
+          // Check handle duration constraint (duration * 2 <= min(fromClip.duration, toClip.duration))
+          final shortest = min(fromClip.durationTicks, toClip.durationTicks);
+          if (transition.durationTicks * 2 > shortest) continue;
+
+          // Transition window [at_ticks, at_ticks + duration_ticks) must fit within range
+          if (transition.atTicks < rangeStart ||
+              transition.atTicks + transition.durationTicks > rangeEnd) {
+            continue;
+          }
+
+          resolvedTransitions.add(
+            Transition(
+              id: UuidV7.ensureValid(transition.id),
+              kind: transition.kind,
+              atTicks: transition.atTicks,
+              durationTicks: transition.durationTicks,
+              fromClipId: fromClip.id,
+              toClipId: toClip.id,
+            ),
+          );
+        }
+
+        resolvedTracks.add(
+          RenderGraphTrack(
+            id: trackId,
+            kind: TrackKind.video,
+            position: trackPos,
+            name: track.name,
+            enabled: track.enabled,
+            clips: resolvedClips,
+            transitions: resolvedTransitions,
+          ),
+        );
+      } else if (track.kind == TrackKind.audio) {
+        final resolvedAudioClips = <RenderGraphAudioClip>[];
+
+        for (final clip in track.clips) {
+          if (clip.timelineEndTicks <= rangeStart ||
+              clip.timelineStartTicks >= rangeEnd) {
+            continue;
+          }
+
+          final clipId = UuidV7.ensureValid(clip.id);
+          final asset = clip.assetId != null
+              ? _currentDocument.assets[clip.assetId]
+              : null;
+          final assetId = clip.assetId != null
+              ? UuidV7.ensureValid(clip.assetId!)
+              : null;
+
+          final effectiveStart = max(clip.timelineStartTicks, rangeStart);
+          final effectiveEnd = min(clip.timelineEndTicks, rangeEnd);
+          final effectiveDuration = effectiveEnd - effectiveStart;
+          if (effectiveDuration <= 0) continue;
+
+          final startOffsetTicks = effectiveStart - clip.timelineStartTicks;
+          final sourceInOffsetTicks =
+              (startOffsetTicks * clip.speedNum) ~/ clip.speedDen;
+          final effectiveSourceIn = clip.sourceInTicks + sourceInOffsetTicks;
+
+          // Clamp fades if sliced
+          var fadeIn = clip.fadeInTicks;
+          var fadeOut = clip.fadeOutTicks;
+          if (fadeIn + fadeOut > effectiveDuration) {
+            final scale = effectiveDuration / (fadeIn + fadeOut);
+            fadeIn = (fadeIn * scale).toInt();
+            fadeOut = effectiveDuration - fadeIn;
+          }
+
+          resolvedAudioClips.add(
+            RenderGraphAudioClip(
+              id: clipId,
+              assetId: assetId,
+              sourceUri: asset?.uri,
+              sourceHash: asset?.hash,
+              streamIndex: clip.streamIndex >= 0 ? clip.streamIndex : 0,
+              timelineStartTicks: effectiveStart,
+              durationTicks: effectiveDuration,
+              sourceInTicks: effectiveSourceIn,
+              speedNum: clip.speedNum,
+              speedDen: clip.speedDen,
+              gainMb: clip.gainMb,
+              fadeInTicks: fadeIn,
+              fadeOutTicks: fadeOut,
+              enabled: clip.enabled,
+            ),
+          );
+        }
+
+        resolvedTracks.add(
+          RenderGraphTrack(
+            id: trackId,
+            kind: TrackKind.audio,
+            position: trackPos,
+            name: track.name,
+            enabled: track.enabled,
+            gainMb: track.gainMb ?? 0,
+            panPpm: track.panPpm ?? 0,
+            audioClips: resolvedAudioClips,
+          ),
+        );
+      } else if (track.kind == TrackKind.overlay) {
+        final resolvedTextLayers = <TextLayer>[];
+
+        for (final layer in track.textLayers) {
+          // Layer must be within range
+          if (layer.startTicks < rangeStart || layer.endTicks > rangeEnd) {
+            continue;
+          }
+
+          resolvedTextLayers.add(
+            TextLayer(
+              id: UuidV7.ensureValid(layer.id),
+              rasterUri: layer.rasterUri,
+              rasterHash: layer.rasterHash,
+              rasterWidth: layer.rasterWidth,
+              rasterHeight: layer.rasterHeight,
+              startTicks: layer.startTicks,
+              durationTicks: layer.durationTicks,
+              opacityPpm: layer.opacityPpm,
+              transform: layer.transform,
+              animationIn: layer.animationIn,
+              animationOut: layer.animationOut,
+            ),
+          );
+        }
+
+        resolvedTracks.add(
+          RenderGraphTrack(
+            id: trackId,
+            kind: TrackKind.overlay,
+            position: trackPos,
+            name: track.name,
+            enabled: track.enabled,
+            textLayers: resolvedTextLayers,
+          ),
+        );
+      }
+    }
+
+    return RenderGraph(
+      graphSchema: 'shadow.rendergraph/1',
+      sequenceId: sequenceId,
+      projectRevision: _revision,
+      timebase: _currentDocument.timebase,
+      profile: _currentDocument.profile,
+      range: range,
+      backgroundRgba: _currentDocument.backgroundRgba,
+      tracks: resolvedTracks,
+    );
   }
 }

@@ -12,6 +12,24 @@ abstract final class UuidV7 {
   /// Validates whether a given string is a valid UUIDv7.
   static bool isValid(String value) => _pattern.hasMatch(value);
 
+  /// Ensures [value] is a valid UUIDv7. If it already matches, returns [value].
+  /// Otherwise deterministically generates a valid UUIDv7 derived from [value].
+  static String ensureValid(String value, [int? seed]) {
+    if (isValid(value)) return value;
+    final ms = (seed ?? 1763300000000) & 0xFFFFFFFFFFFF;
+    final timeHex = ms.toRadixString(16).padLeft(12, '0');
+    final timeHigh = timeHex.substring(0, 8);
+    final timeMid = timeHex.substring(8, 12);
+    final hash = value.hashCode.abs();
+    final randA = (hash & 0xFFF).toRadixString(16).padLeft(3, '0');
+    final variantNibble = (8 + ((hash >> 12) & 3)).toRadixString(16);
+    final randB1 = ((hash >> 14) & 0xFFF).toRadixString(16).padLeft(3, '0');
+    final randB2 = ((hash >> 2) & 0xFFFF).toRadixString(16).padLeft(4, '0');
+    final randB3 = ((hash >> 6) & 0xFFFF).toRadixString(16).padLeft(4, '0');
+    final randB4 = ((hash >> 10) & 0xFFFF).toRadixString(16).padLeft(4, '0');
+    return '$timeHigh-$timeMid-7$randA-$variantNibble$randB1-$randB2$randB3$randB4';
+  }
+
   /// Generates a new UUIDv7 string.
   ///
   /// Optional [timestampMs] can be provided for deterministic tests.

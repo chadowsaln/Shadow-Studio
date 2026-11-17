@@ -292,14 +292,30 @@ void main() {
       );
     });
 
-    test('resolveGraph throws UnimplementedError in Phase 1 & 2', () {
+    test('resolveGraph throws revision mismatch on mismatched revision', () {
       expect(
         () => service.resolveGraph(
-          revision: 0,
+          revision: 999,
           range: const RangeTicks(startTicks: 0, durationTicks: 1000000),
         ),
-        throwsUnimplementedError,
+        throwsA(
+          isA<ShadowError>().having(
+            (e) => e.code,
+            'code',
+            'EDIT_REVISION_MISMATCH',
+          ),
+        ),
       );
+    });
+
+    test('resolveGraph resolves valid RenderGraph at current revision', () {
+      final graph = service.resolveGraph(
+        revision: service.revision,
+        range: const RangeTicks(startTicks: 0, durationTicks: 1000000),
+      );
+      expect(graph.graphSchema, equals('shadow.rendergraph/1'));
+      expect(graph.projectRevision, equals(service.revision));
+      expect(graph.range.durationTicks, equals(1000000));
     });
   });
 }

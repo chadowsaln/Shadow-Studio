@@ -28,6 +28,13 @@ class RangeTicks {
         'duration_ticks': durationTicks,
       };
 
+  factory RangeTicks.fromJson(Map<String, Object?> json) {
+    return RangeTicks(
+      startTicks: json['start_ticks'] as int,
+      durationTicks: json['duration_ticks'] as int,
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
