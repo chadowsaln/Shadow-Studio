@@ -1,6 +1,7 @@
 name: local_storage
 description: Durable, crash-safe project SQLite persistence and index for Shadow Studio.
 version: 0.1.0
+publish_to: 'none'
 resolution: workspace
 
 environment:
@@ -10,6 +11,10 @@ dependencies:
   meta: ^1.11.0
   path: ^1.9.0
   sqlite3: ^3.5.2
+  shadow_agent_runtime:
+    path: ../agent_runtime
+  shadow_contracts:
+    path: ../contracts
 
 dev_dependencies:
   lints: ^3.0.0
